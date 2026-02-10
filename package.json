@@ -1,0 +1,23 @@
+{
+  "name": "mlb-sign",
+  "version": "1.0.0",
+  "description": "Raspberry Pi LED matrix sign displaying MLB standings",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "test": "jest"
+  },
+  "keywords": ["mlb", "led", "raspberry-pi", "standings"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "ts-node": "^10.9.0"
+  },
+  "dependencies": {
+    "rpi-rgb-led-matrix": "^1.0.0"
+  }
+}

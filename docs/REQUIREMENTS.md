@@ -55,6 +55,14 @@ The system is a Raspberry Pi–driven LED matrix sign that displays MLB standing
 - Outside scheduled hours, the display shall be blank or powered down.
 - Scheduling shall be based on the system timezone.
 
+### Wi-Fi Provisioning
+
+- On first boot (or when no known Wi-Fi network is available), the system shall broadcast a local Wi-Fi hotspot.
+- The hotspot shall serve a captive portal web page for entering Wi-Fi credentials.
+- After credentials are submitted, the system shall connect to the configured network and disable the hotspot.
+- The system shall store credentials persistently so they survive reboots.
+- If the configured network becomes unavailable, the system shall re-enable the hotspot for reconfiguration.
+
 ---
 
 ## Non-Functional Requirements
@@ -105,6 +113,7 @@ Configuration shall be externalized (config file or environment variables).
 - Audio output
 - Multi-panel LED walls
 - Animations beyond simple transitions
+- Bluetooth-based Wi-Fi provisioning (captive portal used instead)
 
 ---
 

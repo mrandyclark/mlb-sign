@@ -1,0 +1,21 @@
+{
+  "api": {
+    "baseUrl": "https://your-api.example.com",
+    "refreshIntervalSeconds": 3600,
+    "timeoutSeconds": 30
+  },
+  "display": {
+    "brightness": 50,
+    "rotationIntervalSeconds": 10,
+    "width": 64,
+    "height": 32
+  },
+  "schedule": {
+    "enabled": false,
+    "onTime": "07:00",
+    "offTime": "23:00",
+    "timezone": "America/Los_Angeles"
+  },
+  "divisions": ["AL West"],
+  "cacheFile": "standings_cache.json"
+}

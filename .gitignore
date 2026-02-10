@@ -3,3 +3,6 @@ __pycache__/
 *.pyc
 .env
 .idea
+node_modules
+dist
+standings_cache.json
