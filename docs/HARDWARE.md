@@ -6,12 +6,16 @@ This document describes the physical hardware configuration for the MLB LED Sign
 
 ## Core Components
 
-- Raspberry Pi Zero 2 W
-- Adafruit RGB Matrix Bonnet (for Raspberry Pi)
-- Adafruit 64×32 RGB LED Matrix (5mm pitch, HUB75)
-- HUB75 16-pin ribbon cable
-- USB-C PD wall charger
-- USB-C → 5.5mm barrel power cable (Adafruit)
+| Component | Link |
+|-----------|------|
+| Raspberry Pi Zero 2 W | [Amazon](https://www.amazon.com/dp/B09LH5SBPS?ref=ppx_yo2ov_dt_b_fed_asin_title) |
+| Adafruit RGB Matrix Bonnet (for Raspberry Pi) | [Adafruit](https://www.adafruit.com/product/3211) |
+| Adafruit 64×32 RGB LED Matrix (5mm pitch, HUB75) | [Adafruit](https://www.adafruit.com/product/2277) |
+| HUB75 16-pin ribbon cable | [Amazon](https://www.amazon.com/dp/B07FZWH9S6?ref=ppx_yo2ov_dt_b_fed_asin_title&th=1) |
+| USB-C PD wall charger | [Amazon](https://www.amazon.com/dp/B0DBPRTG9H?ref=ppx_yo2ov_dt_b_fed_asin_title&th=1) |
+| USB-C → 5.5mm barrel power cable | [Adafruit](https://www.adafruit.com/product/5968) |
+| MicroSD card (32GB) | [Amazon](https://www.amazon.com/dp/B08J4HJ98L?ref=ppx_yo2ov_dt_b_fed_asin_title&th=1) |
+| Raspberry Pi Zero case with accessories | [Amazon](https://www.amazon.com/dp/B075FLGWJL?ref=ppx_yo2ov_dt_b_fed_asin_title&th=1) |
 
 ---
 
