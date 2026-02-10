@@ -45,26 +45,38 @@ export class MLBAPIClient {
   }
 
   private async fetchFromAPI(): Promise<DivisionStandings[]> {
-    const url = `${this.config.api.baseUrl}/standings`;
-    
+    let url = `${this.config.api.baseUrl}/mlb-standings`;
+    if (this.config.api.date) {
+      url += `?date=${this.config.api.date}`;
+    }
+
     console.log(`Fetching standings from ${url}`);
-    
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.config.api.timeoutSeconds * 1000);
-    
+
     try {
+      const headers: Record<string, string> = {
+        'Accept': 'application/json',
+      };
+
+      if (this.config.api.apiKey) {
+        headers['X-API-Key'] = this.config.api.apiKey;
+      }
+
       const response = await fetch(url, {
         signal: controller.signal,
-        headers: {
-          'Accept': 'application/json',
-        },
+        headers,
       });
-      
+
+      console.log(response);
+
       if (!response.ok) {
         throw new Error(`API returned ${response.status}: ${response.statusText}`);
       }
-      
+
       const data = await response.json();
+      console.log(data);
       return this.parseStandings(data);
     } finally {
       clearTimeout(timeout);
@@ -73,7 +85,7 @@ export class MLBAPIClient {
 
   /**
    * Parse API response into DivisionStandings.
-   * 
+   *
    * Expected API response format:
    * {
    *   "divisions": [
@@ -157,7 +169,7 @@ export class MLBAPIClient {
 
   getDivision(divisionName: string): DivisionStandings | undefined {
     const standings = this.cachedStandings || [];
-    
+
     return standings.find(
       (div) => div.divisionName.toLowerCase().includes(divisionName.toLowerCase())
     );

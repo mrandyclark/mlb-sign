@@ -22,8 +22,10 @@ export interface DisplayConfig {
 
 export interface APIConfig {
   baseUrl: string;
+  apiKey: string;
   refreshIntervalSeconds: number;
   timeoutSeconds: number;
+  date?: string;
 }
 
 export interface Config {
@@ -36,7 +38,8 @@ export interface Config {
 
 const DEFAULT_CONFIG: Config = {
   api: {
-    baseUrl: 'https://your-api.example.com',
+    baseUrl: 'http://localhost:3000/api/external',
+    apiKey: '',
     refreshIntervalSeconds: 3600,
     timeoutSeconds: 30,
   },
