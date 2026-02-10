@@ -4,6 +4,8 @@ A Raspberry Pi–powered LED matrix sign that displays MLB standings (division r
 
 This repository acts as both the project codebase and a build log, so the setup can be reproduced later (including building a second unit).
 
+![Rendering concept](images/01-rendering.png)
+
 ---
 
 ## Project Overview
