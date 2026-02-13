@@ -11,7 +11,7 @@
     "rotationIntervalSeconds": 10,
     "width": 64,
     "height": 32,
-    "gpioSlowdown": 10
+    "gpioSlowdown": 6
   },
   "schedule": {
     "enabled": false,
