@@ -21,34 +21,65 @@ REMOTE_USER="${TARGET%%@*}"
 REMOTE_DIR="/home/${REMOTE_USER}/mlb-sign"
 REPO_URL="https://github.com/mrandyclark/mlb-sign.git"
 
+# ---------------------------------------------------------------------------
+# SSH multiplexing — reuse a single connection to avoid repeated passwords
+# ---------------------------------------------------------------------------
+SSH_CONTROL="/tmp/mlb-sign-deploy-ssh-$$"
+
+cleanup() {
+  ssh -o ControlPath="${SSH_CONTROL}" -O exit "${TARGET}" 2>/dev/null || true
+}
+trap cleanup EXIT
+
 echo "==> Deploying mlb-sign to ${TARGET}"
+echo ""
+echo "Opening SSH connection (you'll enter your password once)..."
+ssh -o ConnectTimeout=10 -o ControlMaster=yes -o ControlPath="${SSH_CONTROL}" -o ControlPersist=300 -fN "${TARGET}"
+echo "Connected."
 echo ""
 
 # ---------------------------------------------------------------------------
-# Helper: run a command on the Pi via SSH
+# Helper: run a command on the Pi via the shared SSH connection
 # ---------------------------------------------------------------------------
 remote() {
-  ssh -o ConnectTimeout=10 "${TARGET}" "$@"
+  ssh -o ControlPath="${SSH_CONTROL}" "${TARGET}" "$@"
 }
 
 # ---------------------------------------------------------------------------
-# Step 1: Install Node.js if missing
+# Step 1: Install Node.js if missing or broken
 # ---------------------------------------------------------------------------
 NODE_VERSION="v20.17.0"
-NODE_DISTRO="linux-armv7l"
-NODE_TARBALL="node-${NODE_VERSION}-${NODE_DISTRO}.tar.xz"
-NODE_URL="https://nodejs.org/dist/${NODE_VERSION}/${NODE_TARBALL}"
 
 echo "--- Step 1: Checking Node.js on Pi ---"
-if remote "command -v node >/dev/null 2>&1"; then
+
+# Detect architecture
+PI_ARCH=$(remote "uname -m")
+echo "Pi architecture: ${PI_ARCH}"
+
+if [ "${PI_ARCH}" = "armv6l" ]; then
+  NODE_DISTRO="linux-armv6l"
+  NODE_URL="https://unofficial-builds.nodejs.org/download/release/${NODE_VERSION}/node-${NODE_VERSION}-${NODE_DISTRO}.tar.xz"
+else
+  NODE_DISTRO="linux-armv7l"
+  NODE_URL="https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}-${NODE_DISTRO}.tar.xz"
+fi
+
+NODE_TARBALL="node-${NODE_VERSION}-${NODE_DISTRO}.tar.xz"
+
+# Check if node works (not just exists — it might be the wrong arch)
+if remote "node --version >/dev/null 2>&1"; then
   INSTALLED_VERSION=$(remote "node --version")
   echo "Node.js already installed: ${INSTALLED_VERSION}"
 else
-  echo "Installing Node.js ${NODE_VERSION} (armv7l) from nodejs.org..."
-  remote "curl -fsSL ${NODE_URL} -o /tmp/${NODE_TARBALL} \
+  echo "Installing Node.js ${NODE_VERSION} (${NODE_DISTRO})..."
+  echo "  URL: ${NODE_URL}"
+  # Remove any broken previous install first
+  remote "sudo rm -f /usr/local/bin/node /usr/local/bin/npm /usr/local/bin/npx"
+  remote "curl -fsSL '${NODE_URL}' -o /tmp/${NODE_TARBALL} \
     && sudo tar -xJf /tmp/${NODE_TARBALL} -C /usr/local --strip-components=1 \
     && rm /tmp/${NODE_TARBALL}"
-  echo "Node.js installed: $(remote 'node --version')"
+  INSTALLED_VERSION=$(remote "node --version")
+  echo "Node.js installed: ${INSTALLED_VERSION}"
 fi
 
 # ---------------------------------------------------------------------------
