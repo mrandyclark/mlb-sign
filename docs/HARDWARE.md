@@ -6,15 +6,15 @@ Physical hardware configuration for the MLB LED Sign. Reference for how everythi
 
 ## Core Components
 
-| Component | Link |
-|-----------|------|
-| Raspberry Pi Zero WH (with pre-soldered header) | [Adafruit](https://www.adafruit.com/product/3708) |
-| Adafruit RGB Matrix Bonnet (for Raspberry Pi) | [Adafruit](https://www.adafruit.com/product/3211) |
-| Adafruit 64×32 RGB LED Matrix (5mm pitch, HUB75) | [Adafruit](https://www.adafruit.com/product/2277) |
-| HUB75 16-pin ribbon cable | [Amazon](https://www.amazon.com/dp/B07FZWH9S6?ref=ppx_yo2ov_dt_b_fed_asin_title&th=1) |
-| USB-C PD wall charger | [Amazon](https://www.amazon.com/dp/B0DBPRTG9H?ref=ppx_yo2ov_dt_b_fed_asin_title&th=1) |
-| USB-C → 5.5mm barrel power cable | [Adafruit](https://www.adafruit.com/product/5968) |
-| MicroSD card (32GB) | [Amazon](https://www.amazon.com/dp/B08J4HJ98L?ref=ppx_yo2ov_dt_b_fed_asin_title&th=1) |
+| Component | Price | Link |
+|-----------|-------|------|
+| Raspberry Pi Zero 2W with Header | $19.80 | [Adafruit](https://www.adafruit.com/product/6008) |
+| Adafruit RGB Matrix Bonnet for Raspberry Pi | $14.95 | [Adafruit](https://www.adafruit.com/product/3211) |
+| 64×32 RGB LED Matrix (4mm pitch, HUB75) | $39.95 | [Adafruit](https://www.adafruit.com/product/2278) |
+| USB-C → 5.5mm Barrel Jack Cable | $7.95 | [Adafruit](https://www.adafruit.com/product/5968) |
+| Mini Magnet Feet for RGB LED Matrix | $2.50 | [Adafruit](https://www.adafruit.com/product/4631) |
+| USB-C PD Wall Charger (5V/4A+) | ~$12 | [Amazon](https://www.amazon.com/dp/B0DBPRTG9H) |
+| MicroSD Card (32GB) | ~$8 | [Amazon](https://www.amazon.com/dp/B08J4HJ98L) |
 
 > **Upgrade note:** The Pi Zero W (armv6l, single-core) works but has some display flickering due to limited CPU. A **Pi Zero 2 WH** ([Adafruit](https://www.adafruit.com/product/6008)) is a drop-in replacement with a quad-core CPU that should eliminate flickering.
 

@@ -24,16 +24,17 @@ The goal of this project is to build a clean, scoreboard-style LED sign with a p
 
 ---
 
-## Hardware Summary
+## Shopping List
 
-**Core hardware for the prototype:**
-
-- Raspberry Pi Zero 2 W
-- Adafruit RGB Matrix Bonnet
-- Adafruit 64×32 RGB LED Matrix (5mm pitch, HUB75)
-- HUB75 ribbon cable
-- USB-C PD wall charger
-- USB-C → 5.5mm barrel power cable
+| Component | Price | Link |
+|-----------|-------|------|
+| Raspberry Pi Zero 2W with Header | $19.80 | [Adafruit](https://www.adafruit.com/product/6008) |
+| Adafruit RGB Matrix Bonnet for Raspberry Pi | $14.95 | [Adafruit](https://www.adafruit.com/product/3211) |
+| 64×32 RGB LED Matrix (4mm pitch, HUB75) | $39.95 | [Adafruit](https://www.adafruit.com/product/2278) |
+| USB-C → 5.5mm Barrel Jack Cable | $7.95 | [Adafruit](https://www.adafruit.com/product/5968) |
+| Mini Magnet Feet for RGB LED Matrix | $2.50 | [Adafruit](https://www.adafruit.com/product/4631) |
+| USB-C PD Wall Charger (5V/4A+) | ~$12 | [Amazon](https://www.amazon.com/dp/B0DBPRTG9H) |
+| MicroSD Card (32GB) | ~$8 | [Amazon](https://www.amazon.com/dp/B08J4HJ98L) |
 
 > **Important power note:** The LED matrix is powered through the RGB Matrix Bonnet, which also powers the Raspberry Pi. The Pi must **NOT** be powered via micro-USB when the matrix is attached.
 
