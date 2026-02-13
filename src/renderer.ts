@@ -104,6 +104,15 @@ const FONT_3X5: Record<string, number[][]> = {
   '.': [[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,1,0]],
 };
 
+function parseHexColor(hex: string): { r: number; g: number; b: number } {
+  const clean = hex.replace('#', '');
+  return {
+    r: parseInt(clean.substring(0, 2), 16) || 0,
+    g: parseInt(clean.substring(2, 4), 16) || 0,
+    b: parseInt(clean.substring(4, 6), 16) || 0,
+  };
+}
+
 export class Renderer {
   private config: Config;
   private frameBuffer: FrameBuffer;
@@ -132,10 +141,14 @@ export class Renderer {
     const abbr = team.teamAbbreviation.toUpperCase();
     const record = `${team.wins}-${team.losses}`;
 
+    const abbrColor = team.colors?.primary
+      ? parseHexColor(team.colors.primary)
+      : { r: 255, g: 255, b: 255 };
+
     let x = 1;
     x = this.drawText(rankStr, x, y, 255, 255, 255);
     x += 2;
-    x = this.drawText(abbr, x, y, 255, 255, 255);
+    x = this.drawText(abbr, x, y, abbrColor.r, abbrColor.g, abbrColor.b);
     x += 2;
     this.drawText(record, x, y, 200, 200, 200);
   }

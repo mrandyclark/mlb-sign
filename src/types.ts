@@ -2,6 +2,11 @@
  * Core data types for MLB standings.
  */
 
+export interface TeamColors {
+  primary: string;
+  secondary: string;
+}
+
 export interface TeamStanding {
   teamName: string;
   teamAbbreviation: string;
@@ -11,6 +16,7 @@ export interface TeamStanding {
   gamesBack: string;
   divisionName: string;
   leagueName: string;
+  colors?: TeamColors;
 }
 
 export interface DivisionStandings {

@@ -130,6 +130,7 @@ export class MLBAPIClient {
         gamesBack: team.gamesBack || '-',
         divisionName: div.name,
         leagueName: div.league,
+        colors: team.colors ? { primary: team.colors.primary, secondary: team.colors.secondary } : undefined,
       }));
 
       teams.sort((a, b) => a.divisionRank - b.divisionRank);
