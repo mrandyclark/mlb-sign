@@ -6,14 +6,16 @@ Wants=network-online.target
 [Service]
 Type=simple
 WorkingDirectory=/home/mrandyclark/mlb-sign
-ExecStartPre=/bin/sleep 5
+Environment=NODE_ENV=production
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+ExecStartPre=/bin/sleep 10
+ExecStartPre=/bin/bash /home/mrandyclark/mlb-sign/scripts/auto-update.sh
 ExecStart=/usr/local/bin/node /home/mrandyclark/mlb-sign/dist/index.js
 Restart=on-failure
 RestartSec=30
 StartLimitIntervalSec=300
 StartLimitBurst=5
 User=root
-Environment=NODE_ENV=production
 StandardOutput=journal
 StandardError=journal
 

@@ -58,13 +58,7 @@ export class MLBAPIClient {
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
-      const headers: Record<string, string> = {
-        'Accept': 'application/json',
-      };
-
-      if (this.config.api.apiKey) {
-        headers['X-API-Key'] = this.config.api.apiKey;
-      }
+      const headers = this.buildHeaders();
 
       const response = await fetch(url, {
         signal: controller.signal,
@@ -83,6 +77,52 @@ export class MLBAPIClient {
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
       console.error(`Fetch failed after ${elapsed}s: ${error.message}`);
       throw error;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  private buildHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {
+      'Accept': 'application/json',
+    };
+    if (this.config.api.apiKey) {
+      headers['X-API-Key'] = this.config.api.apiKey;
+    }
+    if (this.config.signId) {
+      headers['X-Sign-Id'] = this.config.signId;
+    }
+    return headers;
+  }
+
+  /**
+   * Fetch sign-specific configuration from the API.
+   * Returns null if the endpoint is unavailable or the sign has no config.
+   */
+  async fetchSignConfig(): Promise<Record<string, any> | null> {
+    const url = `${this.config.api.baseUrl}/sign-config`;
+    console.log(`Fetching sign config from ${url}`);
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), this.config.api.timeoutSeconds * 1000);
+
+    try {
+      const response = await fetch(url, {
+        signal: controller.signal,
+        headers: this.buildHeaders(),
+      });
+
+      if (!response.ok) {
+        console.warn(`Sign config not available (${response.status})`);
+        return null;
+      }
+
+      const data = await response.json() as Record<string, any>;
+      console.log('Sign config received');
+      return data;
+    } catch (error: any) {
+      console.warn(`Failed to fetch sign config: ${error.message}`);
+      return null;
     } finally {
       clearTimeout(timeout);
     }

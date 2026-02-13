@@ -14,6 +14,7 @@ async function main(): Promise<void> {
 
   const config = loadConfig();
   console.log('Configuration loaded');
+  console.log(`  Sign ID: ${config.signId}`);
   console.log(`  API URL: ${config.api.baseUrl}`);
   console.log(`  Display: ${config.display.width}x${config.display.height}`);
   console.log(`  Brightness: ${config.display.brightness}%`);

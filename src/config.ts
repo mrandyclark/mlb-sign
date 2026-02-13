@@ -30,6 +30,7 @@ export interface APIConfig {
 }
 
 export interface Config {
+  signId: string;
   api: APIConfig;
   display: DisplayConfig;
   schedule: ScheduleConfig;
@@ -37,7 +38,31 @@ export interface Config {
   cacheFile: string;
 }
 
+const SIGN_ID_PATH = path.join(process.env.HOME || '/root', '.sign-id');
+
+function loadSignId(): string {
+  // 1. Environment variable
+  if (process.env.MLB_SIGN_ID) {
+    return process.env.MLB_SIGN_ID.trim();
+  }
+
+  // 2. File at ~/.sign-id
+  try {
+    if (fs.existsSync(SIGN_ID_PATH)) {
+      const id = fs.readFileSync(SIGN_ID_PATH, 'utf-8').trim();
+      if (id) return id;
+    }
+  } catch {
+    // ignore read errors
+  }
+
+  // 3. Fall back to hostname
+  const os = require('os');
+  return os.hostname();
+}
+
 const DEFAULT_CONFIG: Config = {
+  signId: '',
   api: {
     baseUrl: 'http://localhost:3000/api/external',
     apiKey: '',
@@ -120,5 +145,6 @@ export function loadConfig(configPath?: string): Config {
   }
   
   const config = deepMerge(DEFAULT_CONFIG, fileConfig);
+  config.signId = loadSignId();
   return applyEnvOverrides(config);
 }
