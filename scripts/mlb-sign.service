@@ -5,8 +5,8 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-WorkingDirectory=/home/pi/mlb-sign
-ExecStart=/usr/bin/node /home/pi/mlb-sign/dist/index.js
+WorkingDirectory=/home/mrandyclark/mlb-sign
+ExecStart=/usr/bin/node /home/mrandyclark/mlb-sign/dist/index.js
 Restart=on-failure
 RestartSec=10
 User=root

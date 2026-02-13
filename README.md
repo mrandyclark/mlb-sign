@@ -86,7 +86,7 @@ Detailed setup and hardware notes are kept out of this README and live in the `d
 From your local machine:
 
 ```bash
-./scripts/deploy.sh pi@mlb-sign.local
+./scripts/deploy.sh mrandyclark@mlb-sign.local
 ```
 
 This installs Node.js, clones the repo, builds, and prints run instructions.

@@ -16,8 +16,9 @@
 #
 set -euo pipefail
 
-TARGET="${1:-pi@mlb-sign.local}"
-REMOTE_DIR="/home/pi/mlb-sign"
+TARGET="${1:-mrandyclark@mlb-sign.local}"
+REMOTE_USER="${TARGET%%@*}"
+REMOTE_DIR="/home/${REMOTE_USER}/mlb-sign"
 REPO_URL="https://github.com/mrandyclark/mlb-sign.git"
 
 echo "==> Deploying mlb-sign to ${TARGET}"
@@ -33,13 +34,20 @@ remote() {
 # ---------------------------------------------------------------------------
 # Step 1: Install Node.js if missing
 # ---------------------------------------------------------------------------
+NODE_VERSION="v20.17.0"
+NODE_DISTRO="linux-armv7l"
+NODE_TARBALL="node-${NODE_VERSION}-${NODE_DISTRO}.tar.xz"
+NODE_URL="https://nodejs.org/dist/${NODE_VERSION}/${NODE_TARBALL}"
+
 echo "--- Step 1: Checking Node.js on Pi ---"
 if remote "command -v node >/dev/null 2>&1"; then
-  NODE_VERSION=$(remote "node --version")
-  echo "Node.js already installed: ${NODE_VERSION}"
+  INSTALLED_VERSION=$(remote "node --version")
+  echo "Node.js already installed: ${INSTALLED_VERSION}"
 else
-  echo "Installing Node.js via NodeSource..."
-  remote "curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt-get install -y nodejs"
+  echo "Installing Node.js ${NODE_VERSION} (armv7l) from nodejs.org..."
+  remote "curl -fsSL ${NODE_URL} -o /tmp/${NODE_TARBALL} \
+    && sudo tar -xJf /tmp/${NODE_TARBALL} -C /usr/local --strip-components=1 \
+    && rm /tmp/${NODE_TARBALL}"
   echo "Node.js installed: $(remote 'node --version')"
 fi
 
