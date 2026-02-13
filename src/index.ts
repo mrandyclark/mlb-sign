@@ -100,6 +100,13 @@ async function main(): Promise<void> {
   process.on('SIGTERM', shutdown);
 }
 
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught exception (keeping alive):', error);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled rejection (keeping alive):', reason);
+});
+
 main().catch((error) => {
   console.error('Fatal error:', error);
   process.exit(1);

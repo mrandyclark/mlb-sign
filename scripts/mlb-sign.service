@@ -2,6 +2,8 @@
 Description=MLB LED Sign
 After=network-online.target
 Wants=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
 
 [Service]
 Type=simple
@@ -11,10 +13,8 @@ Environment=PATH=/usr/local/bin:/usr/bin:/bin
 ExecStartPre=/bin/sleep 10
 ExecStartPre=/bin/bash /home/mrandyclark/mlb-sign/scripts/auto-update.sh
 ExecStart=/usr/local/bin/node /home/mrandyclark/mlb-sign/dist/index.js
-Restart=on-failure
+Restart=always
 RestartSec=30
-StartLimitIntervalSec=300
-StartLimitBurst=5
 User=root
 StandardOutput=journal
 StandardError=journal
