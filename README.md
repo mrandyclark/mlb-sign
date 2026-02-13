@@ -41,30 +41,31 @@ The goal of this project is to build a clean, scoreboard-style LED sign with a p
 
 ## Software Summary
 
-- Raspberry Pi OS (64-bit)
+- **Raspberry Pi OS (32-bit)** — required for Pi Zero W (armv6l)
+- **Node.js v20.17.0** — unofficial armv6l build
+- **TypeScript / pnpm** — compiled to CommonJS
+- **`rpi-led-matrix`** — native C++ binding for the LED matrix
 - Headless configuration (no monitor or keyboard)
 - SSH access enabled
-- Python 3 with project dependencies isolated in a virtual environment
 
 ---
 
 ## Documentation
 
-Detailed setup and hardware notes are kept out of this README and live in the `docs/` directory:
+Detailed setup and hardware notes live in the `docs/` directory:
 
 ### [`docs/SETUP.md`](docs/SETUP.md)
 
-- OS installation
-- SSH and network configuration
-- System updates
-- Python virtual environment setup
+- Complete setup from blank SD card to running sign
+- Node.js installation, deploy script, systemd service
+- Configuration reference and troubleshooting
 
 ### [`docs/HARDWARE.md`](docs/HARDWARE.md)
 
-- Physical wiring
-- Power architecture
-- Hardware bring-up checklist
-- Important gotchas
+- Component list with purchase links
+- Power architecture and wiring
+- Software settings that must match hardware
+- Gotchas and upgrade notes
 
 ---
 
@@ -72,16 +73,18 @@ Detailed setup and hardware notes are kept out of this README and live in the `d
 
 - [x] Raspberry Pi OS installed and updated
 - [x] SSH access verified
-- [x] Hardware documented
-- [x] LED matrix wired and tested (sign turns on)
+- [x] Hardware wired and tested
 - [x] TypeScript codebase: API client, renderer, config, caching
 - [x] LED matrix hardware integration (`rpi-led-matrix`)
-- [ ] First live render on the sign
-- [ ] Systemd service for auto-start on boot
+- [x] First live render on the sign
+- [x] Team colors from API with min brightness floor
+- [x] Right-aligned records, loading indicator
+- [x] Deploy script with SSH multiplexing
+- [x] Systemd service file for auto-start on boot
 
 ---
 
-## Deployment
+## Quick Start
 
 From your local machine:
 
@@ -89,30 +92,29 @@ From your local machine:
 ./scripts/deploy.sh mrandyclark@mlb-sign.local
 ```
 
-This installs Node.js, clones the repo, builds, and prints run instructions.
-
-To run manually on the Pi:
+Then on the Pi:
 
 ```bash
+# Test manually
 sudo node dist/index.js
-```
 
-To install as a boot service:
-
-```bash
+# Or install as a boot service
 sudo cp scripts/mlb-sign.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable mlb-sign
 sudo systemctl start mlb-sign
 ```
 
+See [`docs/SETUP.md`](docs/SETUP.md) for full instructions from a blank SD card.
+
+---
+
 ## Planned Next Steps
 
-- [ ] First live render on the sign
-- [ ] Systemd auto-start on boot
-- [ ] Tune brightness and GPIO slowdown
-- [ ] Add rotation and scheduling logic
+- [ ] Upgrade to Pi Zero 2 WH (reduce flickering)
+- [ ] Scheduled on/off times
 - [ ] Enclosure build
+- [ ] Remote config / OTA updates
 
 ---
 
