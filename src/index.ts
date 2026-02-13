@@ -25,6 +25,9 @@ async function main(): Promise<void> {
 
   console.log(`  Hardware LED matrix: ${isHardwareAvailable() ? 'YES' : 'NO (console-only mode)'}`);
 
+  pushFrameToMatrix(matrix, renderer.renderLoading());
+  console.log('Showing loading indicator...');
+
   let currentDivisionIndex = 0;
 
   async function updateDisplay(): Promise<void> {

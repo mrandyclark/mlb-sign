@@ -122,6 +122,16 @@ export class Renderer {
     this.frameBuffer = new FrameBuffer(config.display.width, config.display.height);
   }
 
+  renderLoading(): FrameBuffer {
+    this.frameBuffer.clear();
+    const text = 'LOADING';
+    const w = this.textWidth(text);
+    const x = Math.floor((this.config.display.width - w) / 2);
+    const y = Math.floor((this.config.display.height - 5) / 2);
+    this.drawText(text, x, y, 100, 100, 100);
+    return this.frameBuffer;
+  }
+
   renderDivision(division: DivisionStandings): FrameBuffer {
     this.frameBuffer.clear();
 
@@ -145,12 +155,27 @@ export class Renderer {
       ? parseHexColor(team.colors.primary)
       : { r: 255, g: 255, b: 255 };
 
+    const recordWidth = this.textWidth(record);
+    const recordX = this.config.display.width - recordWidth - 1;
+
     let x = 1;
     x = this.drawText(rankStr, x, y, 255, 255, 255);
     x += 2;
-    x = this.drawText(abbr, x, y, abbrColor.r, abbrColor.g, abbrColor.b);
-    x += 2;
-    this.drawText(record, x, y, 200, 200, 200);
+    this.drawText(abbr, x, y, abbrColor.r, abbrColor.g, abbrColor.b);
+    this.drawText(record, recordX, y, 200, 200, 200);
+  }
+
+  private textWidth(text: string): number {
+    let w = 0;
+    for (const char of text.toUpperCase()) {
+      const glyph = FONT_3X5[char];
+      if (glyph) {
+        w += glyph[0].length + 1;
+      } else {
+        w += 4;
+      }
+    }
+    return w > 0 ? w - 1 : 0;
   }
 
   private drawText(text: string, startX: number, startY: number, r: number, g: number, b: number): number {
