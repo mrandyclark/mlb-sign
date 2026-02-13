@@ -68,7 +68,7 @@ function createRealMatrix(config: Config): MatrixInstance {
     rows: config.display.height,
     cols: config.display.width,
     chainLength: 1,
-    hardwareMapping: GpioMapping.AdafruitHatPwm,
+    hardwareMapping: GpioMapping.AdafruitHat,
     brightness: config.display.brightness,
   };
 
