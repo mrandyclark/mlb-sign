@@ -72,29 +72,47 @@ Detailed setup and hardware notes are kept out of this README and live in the `d
 
 - [x] Raspberry Pi OS installed and updated
 - [x] SSH access verified
-- [x] Python virtual environment created
-- [x] Pillow and Requests installed
 - [x] Hardware documented
-- [ ] Waiting on LED matrix hardware bring-up
+- [x] LED matrix wired and tested (sign turns on)
+- [x] TypeScript codebase: API client, renderer, config, caching
+- [x] LED matrix hardware integration (`rpi-led-matrix`)
+- [ ] First live render on the sign
+- [ ] Systemd service for auto-start on boot
 
 ---
 
+## Deployment
+
+From your local machine:
+
+```bash
+./scripts/deploy.sh pi@mlb-sign.local
+```
+
+This installs Node.js, clones the repo, builds, and prints run instructions.
+
+To run manually on the Pi:
+
+```bash
+sudo node dist/index.js
+```
+
+To install as a boot service:
+
+```bash
+sudo cp scripts/mlb-sign.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable mlb-sign
+sudo systemctl start mlb-sign
+```
+
 ## Planned Next Steps
 
-### Hardware
-
-- [ ] Attach RGB Matrix Bonnet
-- [ ] Connect HUB75 ribbon cable
-- [ ] Power via barrel jack
-- [ ] Run LED matrix demo
-
-### Software
-
-- [ ] Verify matrix output
-- [ ] Implement rendering pipeline
-- [ ] Fetch MLB standings from API
-- [ ] Render division standings
+- [ ] First live render on the sign
+- [ ] Systemd auto-start on boot
+- [ ] Tune brightness and GPIO slowdown
 - [ ] Add rotation and scheduling logic
+- [ ] Enclosure build
 
 ---
 

@@ -125,6 +125,39 @@ Configuration shall be externalized (config file or environment variables).
 - Web-based configuration UI
 - Remote monitoring or alerts
 
+### Display Types (Planned)
+
+The API should return a `displayType` field to control what the sign renders. This makes the system extensible throughout the season.
+
+| Display Type | Description |
+|--------------|-------------|
+| `leaderboard` | Division standings (current implementation) |
+| `score` | Live game scoreboard (innings, score, outs, runners) |
+| `daysUntil` | Countdown to Spring Training, Opening Day, playoffs, etc. |
+| `offseason` | Off-season message or final standings |
+| `allStar` | All-Star break info |
+
+The API should also return a `refreshHintSeconds` value so the Pi knows how often to poll:
+- `leaderboard` → 3600s (hourly)
+- `score` → 30-60s (live game)
+- `daysUntil` → 86400s (daily)
+
+**Implementation notes:**
+- Add `DisplayType` enum and payload interfaces to `types.ts`
+- Add dispatcher/switch logic in `index.ts` based on `displayType`
+- Add render methods to `Renderer` for each display type
+- Handle unknown display types gracefully (fallback to leaderboard)
+
+### Auto-Update on Boot (Planned)
+
+The Pi should automatically pull the latest code from GitHub on startup to enable remote deployments without SSH access.
+
+**Implementation notes:**
+- Add a systemd service or startup script that runs before the main app
+- Script: `cd /home/pi/mlb-sign && git pull && npm run build`
+- Consider a daily cron job as backup for long-running instances
+- Log update results for debugging
+
 ---
 
 ## Acceptance Criteria (V1)

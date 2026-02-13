@@ -1,6 +1,6 @@
 {
   "api": {
-    "baseUrl": "http://localhost:3000/api/external",
+    "baseUrl": "http://spreadsontoast.com/api/external",
     "apiKey": "24f94833bf10c392326899710e023f78a46d1a7e2332a5181a320ef7e822d94f",
     "refreshIntervalSeconds": 3600,
     "timeoutSeconds": 30,
@@ -10,7 +10,8 @@
     "brightness": 50,
     "rotationIntervalSeconds": 10,
     "width": 64,
-    "height": 32
+    "height": 32,
+    "gpioSlowdown": 4
   },
   "schedule": {
     "enabled": false,

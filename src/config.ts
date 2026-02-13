@@ -18,6 +18,7 @@ export interface DisplayConfig {
   rotationIntervalSeconds: number;
   width: number;
   height: number;
+  gpioSlowdown?: number;
 }
 
 export interface APIConfig {
@@ -48,6 +49,7 @@ const DEFAULT_CONFIG: Config = {
     rotationIntervalSeconds: 10,
     width: 64,
     height: 32,
+    gpioSlowdown: 4,
   },
   schedule: {
     enabled: false,

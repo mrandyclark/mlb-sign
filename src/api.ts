@@ -69,14 +69,11 @@ export class MLBAPIClient {
         headers,
       });
 
-      console.log(response);
-
       if (!response.ok) {
         throw new Error(`API returned ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
-      console.log(data);
       return this.parseStandings(data);
     } finally {
       clearTimeout(timeout);

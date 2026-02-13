@@ -7,6 +7,7 @@
 import { loadConfig } from './config';
 import { MLBAPIClient } from './api';
 import { Renderer } from './renderer';
+import { createMatrix, isHardwareAvailable, pushFrameToMatrix, MatrixInstance } from './matrix';
 
 async function main(): Promise<void> {
   console.log('MLB LED Sign starting...');
@@ -20,6 +21,9 @@ async function main(): Promise<void> {
 
   const apiClient = new MLBAPIClient(config);
   const renderer = new Renderer(config);
+  const matrix: MatrixInstance = createMatrix(config);
+
+  console.log(`  Hardware LED matrix: ${isHardwareAvailable() ? 'YES' : 'NO (console-only mode)'}`);
 
   let currentDivisionIndex = 0;
 
@@ -44,9 +48,13 @@ async function main(): Promise<void> {
 
       console.log(`\nDisplaying: ${division.divisionName}`);
       
-      renderer.renderDivision(division);
-      
-      console.log(renderer.toAsciiArt());
+      const frame = renderer.renderDivision(division);
+
+      pushFrameToMatrix(matrix, frame);
+
+      if (!isHardwareAvailable()) {
+        console.log(renderer.toAsciiArt());
+      }
 
       currentDivisionIndex = (currentDivisionIndex + 1) % config.divisions.length;
     } catch (error) {
