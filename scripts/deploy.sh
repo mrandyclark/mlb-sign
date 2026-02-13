@@ -82,6 +82,16 @@ else
   echo "Node.js installed: ${INSTALLED_VERSION}"
 fi
 
+# Install pnpm if missing
+echo ""
+if remote "command -v pnpm >/dev/null 2>&1"; then
+  echo "pnpm already installed: $(remote 'pnpm --version')"
+else
+  echo "Installing pnpm..."
+  remote "sudo npm install -g pnpm"
+  echo "pnpm installed: $(remote 'pnpm --version')"
+fi
+
 # ---------------------------------------------------------------------------
 # Step 2: Install build tools (needed for native addons like rpi-led-matrix)
 # ---------------------------------------------------------------------------
@@ -107,14 +117,14 @@ fi
 # ---------------------------------------------------------------------------
 echo ""
 echo "--- Step 4: Installing dependencies ---"
-remote "cd ${REMOTE_DIR} && npm install"
+remote "cd ${REMOTE_DIR} && pnpm install"
 
 # ---------------------------------------------------------------------------
 # Step 5: Build TypeScript
 # ---------------------------------------------------------------------------
 echo ""
 echo "--- Step 5: Building ---"
-remote "cd ${REMOTE_DIR} && npm run build"
+remote "cd ${REMOTE_DIR} && pnpm run build"
 
 # ---------------------------------------------------------------------------
 # Done
