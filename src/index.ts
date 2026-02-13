@@ -30,14 +30,21 @@ async function main(): Promise<void> {
 
   let currentDivisionIndex = 0;
 
+  let hasData = false;
+
   async function updateDisplay(): Promise<void> {
     try {
       const standings = await apiClient.getStandings();
       
       if (standings.length === 0) {
         console.warn('No standings data available');
+        if (!hasData) {
+          pushFrameToMatrix(matrix, renderer.renderStatus('NO DATA', 'WAITING'));
+        }
         return;
       }
+
+      hasData = true;
 
       const divisionName = config.divisions[currentDivisionIndex];
       const division = standings.find(
@@ -46,6 +53,7 @@ async function main(): Promise<void> {
 
       if (!division) {
         console.warn(`Division "${divisionName}" not found in standings`);
+        currentDivisionIndex = (currentDivisionIndex + 1) % config.divisions.length;
         return;
       }
 
@@ -62,14 +70,33 @@ async function main(): Promise<void> {
       currentDivisionIndex = (currentDivisionIndex + 1) % config.divisions.length;
     } catch (error) {
       console.error('Error updating display:', error);
+      if (!hasData) {
+        pushFrameToMatrix(matrix, renderer.renderStatus('ERROR', 'RETRYING'));
+      }
     }
   }
 
   await updateDisplay();
 
-  setInterval(updateDisplay, config.display.rotationIntervalSeconds * 1000);
+  const rotationTimer = setInterval(updateDisplay, config.display.rotationIntervalSeconds * 1000);
+  rotationTimer.unref = undefined as any; // prevent unref — keep process alive
+
+  // Explicit keepalive so Node.js never exits on its own
+  const keepalive = setInterval(() => {}, 60_000);
 
   console.log('\nSign is running. Press Ctrl+C to stop.');
+
+  // Graceful shutdown
+  const shutdown = () => {
+    console.log('\nShutting down...');
+    clearInterval(rotationTimer);
+    clearInterval(keepalive);
+    matrix.clear();
+    matrix.sync();
+    process.exit(0);
+  };
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
 }
 
 main().catch((error) => {

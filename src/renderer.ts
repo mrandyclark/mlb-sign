@@ -148,6 +148,22 @@ export class Renderer {
     return this.frameBuffer;
   }
 
+  renderStatus(line1: string, line2?: string): FrameBuffer {
+    this.frameBuffer.clear();
+    const w1 = this.textWidth(line1);
+    const x1 = Math.floor((this.config.display.width - w1) / 2);
+    const y1 = line2
+      ? Math.floor((this.config.display.height - 12) / 2)
+      : Math.floor((this.config.display.height - 5) / 2);
+    this.drawText(line1, x1, y1, 200, 50, 50);
+    if (line2) {
+      const w2 = this.textWidth(line2);
+      const x2 = Math.floor((this.config.display.width - w2) / 2);
+      this.drawText(line2, x2, y1 + 7, 150, 150, 150);
+    }
+    return this.frameBuffer;
+  }
+
   renderDivision(division: DivisionStandings): FrameBuffer {
     this.frameBuffer.clear();
 
