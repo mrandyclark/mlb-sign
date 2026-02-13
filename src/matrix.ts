@@ -117,7 +117,6 @@ function createStubMatrix(config: Config): MatrixInstance {
 export function pushFrameToMatrix(matrix: MatrixInstance, frame: FrameBuffer): void {
   matrix.clear();
 
-  let pixelCount = 0;
   for (let y = 0; y < frame.height; y++) {
     for (let x = 0; x < frame.width; x++) {
       const pixel = frame.getPixel(x, y);
@@ -126,12 +125,9 @@ export function pushFrameToMatrix(matrix: MatrixInstance, frame: FrameBuffer): v
         matrix
           .fgColor(colorHex)
           .setPixel(x, y);
-        pixelCount++;
       }
     }
   }
 
-  console.log(`[matrix] Drawing ${pixelCount} pixels, calling sync()...`);
   matrix.sync();
-  console.log(`[matrix] sync() complete`);
 }

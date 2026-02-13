@@ -6,11 +6,16 @@ Wants=network-online.target
 [Service]
 Type=simple
 WorkingDirectory=/home/mrandyclark/mlb-sign
-ExecStart=/usr/bin/node /home/mrandyclark/mlb-sign/dist/index.js
+ExecStartPre=/bin/sleep 5
+ExecStart=/usr/local/bin/node /home/mrandyclark/mlb-sign/dist/index.js
 Restart=on-failure
-RestartSec=10
+RestartSec=30
+StartLimitIntervalSec=300
+StartLimitBurst=5
 User=root
 Environment=NODE_ENV=production
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target

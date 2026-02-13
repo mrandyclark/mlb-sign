@@ -52,14 +52,10 @@ export class MLBAPIClient {
 
     const timeoutMs = this.config.api.timeoutSeconds * 1000;
     console.log(`Fetching standings from ${url}`);
-    console.log(`  Timeout: ${this.config.api.timeoutSeconds}s`);
     const startTime = Date.now();
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => {
-      console.error(`  TIMEOUT after ${this.config.api.timeoutSeconds}s — aborting request`);
-      controller.abort();
-    }, timeoutMs);
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
       const headers: Record<string, string> = {
@@ -70,24 +66,22 @@ export class MLBAPIClient {
         headers['X-API-Key'] = this.config.api.apiKey;
       }
 
-      console.log(`  Sending request...`);
       const response = await fetch(url, {
         signal: controller.signal,
         headers,
       });
-      const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
-      console.log(`  Response: ${response.status} ${response.statusText} (${elapsed}s)`);
 
       if (!response.ok) {
         throw new Error(`API returned ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
-      console.log(`  Parsed JSON (${((Date.now() - startTime) / 1000).toFixed(2)}s total)`);
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      console.log(`Standings fetched (${elapsed}s)`);
       return this.parseStandings(data);
     } catch (error: any) {
-      const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
-      console.error(`  Fetch failed after ${elapsed}s: ${error.name}: ${error.message}`);
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      console.error(`Fetch failed after ${elapsed}s: ${error.message}`);
       throw error;
     } finally {
       clearTimeout(timeout);
@@ -153,7 +147,8 @@ export class MLBAPIClient {
       };
 
       const cachePath = path.resolve(this.config.cacheFile);
-      fs.writeFileSync(cachePath, JSON.stringify(cacheData, null, 2));
+      try { fs.unlinkSync(cachePath); } catch { /* file may not exist */ }
+      fs.writeFileSync(cachePath, JSON.stringify(cacheData, null, 2), { mode: 0o666 });
       console.log(`Saved standings cache to ${cachePath}`);
     } catch (error) {
       console.warn('Failed to save cache:', error);
