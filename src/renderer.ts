@@ -113,6 +113,22 @@ function parseHexColor(hex: string): { r: number; g: number; b: number } {
   };
 }
 
+function colorBrightness(c: { r: number; g: number; b: number }): number {
+  return 0.299 * c.r + 0.587 * c.g + 0.114 * c.b;
+}
+
+function ensureMinBrightness(c: { r: number; g: number; b: number }, minBrightness: number): { r: number; g: number; b: number } {
+  const brightness = colorBrightness(c);
+  if (brightness >= minBrightness) return c;
+  if (brightness === 0) return { r: minBrightness, g: minBrightness, b: minBrightness };
+  const scale = minBrightness / brightness;
+  return {
+    r: Math.min(255, Math.round(c.r * scale)),
+    g: Math.min(255, Math.round(c.g * scale)),
+    b: Math.min(255, Math.round(c.b * scale)),
+  };
+}
+
 export class Renderer {
   private config: Config;
   private frameBuffer: FrameBuffer;
@@ -151,9 +167,17 @@ export class Renderer {
     const abbr = team.teamAbbreviation.toUpperCase();
     const record = `${team.wins}-${team.losses}`;
 
-    const abbrColor = team.colors?.primary
-      ? parseHexColor(team.colors.primary)
-      : { r: 255, g: 255, b: 255 };
+    const MIN_BRIGHTNESS = 40;
+    let abbrColor = { r: 255, g: 255, b: 255 };
+    if (team.colors) {
+      const primary = parseHexColor(team.colors.primary);
+      const secondary = parseHexColor(team.colors.secondary);
+      abbrColor = colorBrightness(primary) >= MIN_BRIGHTNESS
+        ? primary
+        : colorBrightness(secondary) >= MIN_BRIGHTNESS
+          ? secondary
+          : ensureMinBrightness(primary.r + primary.g + primary.b > 0 ? primary : secondary, MIN_BRIGHTNESS);
+    }
 
     const recordWidth = this.textWidth(record);
     const recordX = this.config.display.width - recordWidth - 1;
