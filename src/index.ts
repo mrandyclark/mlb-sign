@@ -40,7 +40,7 @@ async function main(): Promise<void> {
       if (standings.length === 0) {
         console.warn('No standings data available');
         if (!hasData) {
-          pushFrameToMatrix(matrix, renderer.renderStatus('NO DATA', 'WAITING'));
+          pushFrameToMatrix(matrix, renderer.renderStatus('OFFLINE', 'RETRYING'));
         }
         return;
       }
@@ -72,12 +72,17 @@ async function main(): Promise<void> {
     } catch (error) {
       console.error('Error updating display:', error);
       if (!hasData) {
-        pushFrameToMatrix(matrix, renderer.renderStatus('ERROR', 'RETRYING'));
+        pushFrameToMatrix(matrix, renderer.renderStatus('OFFLINE', 'RETRYING'));
       }
     }
   }
 
-  await updateDisplay();
+  try {
+    await updateDisplay();
+  } catch (error) {
+    console.error('Initial display update failed (will retry):', error);
+    pushFrameToMatrix(matrix, renderer.renderStatus('OFFLINE', 'RETRYING'));
+  }
 
   const rotationTimer = setInterval(updateDisplay, config.display.rotationIntervalSeconds * 1000);
   rotationTimer.unref = undefined as any; // prevent unref — keep process alive
@@ -108,6 +113,6 @@ process.on('unhandledRejection', (reason) => {
 });
 
 main().catch((error) => {
-  console.error('Fatal error:', error);
-  process.exit(1);
+  console.error('Fatal error during startup:', error);
+  // Do NOT call process.exit — let systemd restart us
 });
