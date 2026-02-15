@@ -20,5 +20,5 @@
     "timezone": "America/Los_Angeles"
   },
   "divisions": ["NL East", "NL Central", "NL West", "AL East", "AL Central", "AL West"],
-  "cacheFile": "standings_cache.json"
+  "cacheFile": "/tmp/mlb-sign-standings-cache.json"
 }
