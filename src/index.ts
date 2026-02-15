@@ -30,8 +30,8 @@ async function main(): Promise<void> {
   console.log('Showing loading indicator...');
 
   let currentDivisionIndex = 0;
-
   let hasData = false;
+  let lastFrame: ReturnType<typeof renderer.renderLoading> | null = null;
 
   async function updateDisplay(): Promise<void> {
     try {
@@ -40,7 +40,8 @@ async function main(): Promise<void> {
       if (standings.length === 0) {
         console.warn('No standings data available');
         if (!hasData) {
-          pushFrameToMatrix(matrix, renderer.renderStatus('OFFLINE', 'RETRYING'));
+          lastFrame = renderer.renderStatus('OFFLINE', 'RETRYING');
+          pushFrameToMatrix(matrix, lastFrame);
         }
         return;
       }
@@ -61,6 +62,7 @@ async function main(): Promise<void> {
       console.log(`\nDisplaying: ${division.divisionName}`);
       
       const frame = renderer.renderDivision(division);
+      lastFrame = frame;
 
       pushFrameToMatrix(matrix, frame);
 
@@ -72,7 +74,8 @@ async function main(): Promise<void> {
     } catch (error) {
       console.error('Error updating display:', error);
       if (!hasData) {
-        pushFrameToMatrix(matrix, renderer.renderStatus('OFFLINE', 'RETRYING'));
+        lastFrame = renderer.renderStatus('OFFLINE', 'RETRYING');
+        pushFrameToMatrix(matrix, lastFrame);
       }
     }
   }
@@ -81,14 +84,19 @@ async function main(): Promise<void> {
     await updateDisplay();
   } catch (error) {
     console.error('Initial display update failed (will retry):', error);
-    pushFrameToMatrix(matrix, renderer.renderStatus('OFFLINE', 'RETRYING'));
+    lastFrame = renderer.renderStatus('OFFLINE', 'RETRYING');
+    pushFrameToMatrix(matrix, lastFrame);
   }
 
   const rotationTimer = setInterval(updateDisplay, config.display.rotationIntervalSeconds * 1000);
   rotationTimer.unref = undefined as any; // prevent unref — keep process alive
 
-  // Explicit keepalive so Node.js never exits on its own
-  const keepalive = setInterval(() => {}, 60_000);
+  // Watchdog: re-push the last frame every 60s to recover from display dropouts
+  const watchdog = setInterval(() => {
+    if (lastFrame) {
+      pushFrameToMatrix(matrix, lastFrame);
+    }
+  }, 60_000);
 
   console.log('\nSign is running. Press Ctrl+C to stop.');
 
@@ -96,7 +104,7 @@ async function main(): Promise<void> {
   const shutdown = () => {
     console.log('\nShutting down...');
     clearInterval(rotationTimer);
-    clearInterval(keepalive);
+    clearInterval(watchdog);
     matrix.clear();
     matrix.sync();
     process.exit(0);

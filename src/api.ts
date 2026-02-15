@@ -187,8 +187,9 @@ export class MLBAPIClient {
       };
 
       const cachePath = path.resolve(this.config.cacheFile);
-      try { fs.unlinkSync(cachePath); } catch { /* file may not exist */ }
-      fs.writeFileSync(cachePath, JSON.stringify(cacheData, null, 2), { mode: 0o666 });
+      const tmpPath = cachePath + '.tmp';
+      fs.writeFileSync(tmpPath, JSON.stringify(cacheData, null, 2), { mode: 0o666 });
+      fs.renameSync(tmpPath, cachePath);
       console.log(`Saved standings cache to ${cachePath}`);
     } catch (error) {
       console.warn('Failed to save cache:', error);
