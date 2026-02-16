@@ -42,6 +42,22 @@ export interface SlidesResponse {
 }
 
 /**
+ * Response from the /api/external/sign/config endpoint
+ */
+export interface SignConfig {
+  display?: {
+    brightness?: number;
+    rotationIntervalSeconds?: number;
+  };
+  schedule?: {
+    enabled?: boolean;
+    onTime?: string;
+    offTime?: string;
+    timezone?: string;
+  };
+}
+
+/**
  * Cached slides for offline fallback
  */
 export interface SlidesCache {

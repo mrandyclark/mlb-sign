@@ -8,7 +8,7 @@ import { loadConfig } from './config';
 import { MLBAPIClient } from './api';
 import { Renderer } from './renderer';
 import { createMatrix, isHardwareAvailable, pushFrameToMatrix, MatrixInstance } from './matrix';
-import { Slide } from './types';
+import { SignConfig, Slide } from './types';
 
 async function main(): Promise<void> {
   console.log('MLB LED Sign starting...');
@@ -33,6 +33,27 @@ async function main(): Promise<void> {
   let currentSlideIndex = 0;
   let hasData = false;
   let lastFrame: ReturnType<typeof renderer.renderLoading> | null = null;
+  let rotationIntervalMs = config.display.rotationIntervalSeconds * 1000;
+
+  function applySignConfig(signConfig: SignConfig): void {
+    if (signConfig.display?.brightness !== undefined) {
+      config.display.brightness = signConfig.display.brightness;
+      matrix.brightness(signConfig.display.brightness);
+      console.log(`  Brightness updated: ${signConfig.display.brightness}%`);
+    }
+    if (signConfig.display?.rotationIntervalSeconds !== undefined) {
+      config.display.rotationIntervalSeconds = signConfig.display.rotationIntervalSeconds;
+      rotationIntervalMs = signConfig.display.rotationIntervalSeconds * 1000;
+      console.log(`  Rotation interval updated: ${signConfig.display.rotationIntervalSeconds}s`);
+    }
+    if (signConfig.schedule) {
+      if (signConfig.schedule.enabled !== undefined) config.schedule.enabled = signConfig.schedule.enabled;
+      if (signConfig.schedule.onTime !== undefined) config.schedule.onTime = signConfig.schedule.onTime;
+      if (signConfig.schedule.offTime !== undefined) config.schedule.offTime = signConfig.schedule.offTime;
+      if (signConfig.schedule.timezone !== undefined) config.schedule.timezone = signConfig.schedule.timezone;
+      console.log(`  Schedule updated: ${config.schedule.enabled ? `${config.schedule.onTime}-${config.schedule.offTime} ${config.schedule.timezone}` : 'disabled'}`);
+    }
+  }
 
   async function fetchSlides(): Promise<void> {
     try {
@@ -49,6 +70,12 @@ async function main(): Promise<void> {
 
       hasData = true;
       console.log(`Got ${slides.length} slides`);
+
+      // Fetch and apply remote config alongside slides
+      const signConfig = await apiClient.fetchSignConfig();
+      if (signConfig) {
+        applySignConfig(signConfig);
+      }
     } catch (error) {
       console.error('Error fetching slides:', error);
       if (!hasData) {
@@ -85,12 +112,22 @@ async function main(): Promise<void> {
     pushFrameToMatrix(matrix, lastFrame);
   }
 
-  // Rotate slides on display timer
-  const rotationTimer = setInterval(showNextSlide, config.display.rotationIntervalSeconds * 1000);
+  // Rotate slides on display timer (restarts if rotation interval changes via remote config)
+  let rotationTimer = setInterval(showNextSlide, rotationIntervalMs);
   rotationTimer.unref = undefined as any; // prevent unref — keep process alive
 
-  // Refresh slides from API periodically
-  const refreshTimer = setInterval(fetchSlides, config.api.refreshIntervalSeconds * 1000);
+  // Refresh slides from API periodically, and restart rotation timer if interval changed
+  let lastRotationIntervalMs = rotationIntervalMs;
+  const refreshTimer = setInterval(async () => {
+    await fetchSlides();
+    if (rotationIntervalMs !== lastRotationIntervalMs) {
+      clearInterval(rotationTimer);
+      rotationTimer = setInterval(showNextSlide, rotationIntervalMs);
+      rotationTimer.unref = undefined as any;
+      lastRotationIntervalMs = rotationIntervalMs;
+      console.log(`Rotation timer restarted: ${rotationIntervalMs / 1000}s`);
+    }
+  }, config.api.refreshIntervalSeconds * 1000);
   refreshTimer.unref = undefined as any;
 
   // Watchdog: re-push the last frame every 60s to recover from display dropouts
