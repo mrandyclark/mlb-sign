@@ -19,6 +19,5 @@
     "offTime": "23:00",
     "timezone": "America/Los_Angeles"
   },
-  "divisions": ["NL East", "NL Central", "NL West", "AL East", "AL Central", "AL West"],
-  "cacheFile": "/tmp/mlb-sign-standings-cache.json"
+  "cacheFile": "/tmp/mlb-sign-slides-cache.json"
 }

@@ -1,31 +1,50 @@
 /**
- * Core data types for MLB standings.
+ * Slide types that can be displayed on a sign
  */
-
-export interface TeamColors {
-  primary: string;
-  secondary: string;
+export enum SlideType {
+  STANDINGS = 'standings',
 }
 
-export interface TeamStanding {
-  teamName: string;
-  teamAbbreviation: string;
-  divisionRank: number;
-  wins: number;
-  losses: number;
+/**
+ * Team data displayed on a standings slide
+ */
+export interface StandingsSlideTeam {
+  abbreviation: string;
+  colors?: { primary: string; secondary: string };
   gamesBack: string;
-  divisionName: string;
-  leagueName: string;
-  colors?: TeamColors;
+  losses: number;
+  name: string;
+  rank: number;
+  wins: number;
 }
 
-export interface DivisionStandings {
-  divisionName: string;
-  leagueName: string;
-  teams: TeamStanding[];
+/**
+ * A standings slide showing one division's teams
+ */
+export interface StandingsSlide {
+  slideType: SlideType.STANDINGS;
+  teams: StandingsSlideTeam[];
+  title: string;
 }
 
-export interface StandingsCache {
+/**
+ * Union of all possible slide types
+ * Add new slide interfaces here as they are created
+ */
+export type Slide = StandingsSlide;
+
+/**
+ * Response from the /api/external/sign/slides endpoint
+ */
+export interface SlidesResponse {
+  generatedAt: string;
+  slides: Slide[];
+}
+
+/**
+ * Cached slides for offline fallback
+ */
+export interface SlidesCache {
   timestamp: string;
-  standings: DivisionStandings[];
+  slides: Slide[];
 }

@@ -1,34 +1,34 @@
 /**
- * API client for fetching MLB standings data.
+ * API client for fetching sign slides.
  * Connects to user's custom API endpoint.
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
 import { Config } from './config';
-import { DivisionStandings, StandingsCache, TeamStanding } from './types';
+import { Slide, SlidesCache, SlidesResponse } from './types';
 
 export class MLBAPIClient {
   private config: Config;
   private lastFetch: Date | null = null;
-  private cachedStandings: DivisionStandings[] | null = null;
+  private cachedSlides: Slide[] | null = null;
 
   constructor(config: Config) {
     this.config = config;
   }
 
-  async getStandings(forceRefresh = false): Promise<DivisionStandings[]> {
+  async getSlides(forceRefresh = false): Promise<Slide[]> {
     if (!forceRefresh && this.isCacheValid()) {
-      console.log('Using in-memory cached standings');
-      return this.cachedStandings!;
+      console.log('Using in-memory cached slides');
+      return this.cachedSlides!;
     }
 
     try {
-      const standings = await this.fetchFromAPI();
-      this.cachedStandings = standings;
+      const slides = await this.fetchSlides();
+      this.cachedSlides = slides;
       this.lastFetch = new Date();
-      this.saveCache(standings);
-      return standings;
+      this.saveCache(slides);
+      return slides;
     } catch (error) {
       console.warn('Failed to fetch from API:', error);
       return this.loadFromCache();
@@ -36,7 +36,7 @@ export class MLBAPIClient {
   }
 
   private isCacheValid(): boolean {
-    if (!this.cachedStandings || !this.lastFetch) {
+    if (!this.cachedSlides || !this.lastFetch) {
       return false;
     }
 
@@ -44,35 +44,33 @@ export class MLBAPIClient {
     return elapsed < this.config.api.refreshIntervalSeconds;
   }
 
-  private async fetchFromAPI(): Promise<DivisionStandings[]> {
-    let url = `${this.config.api.baseUrl}/mlb-standings`;
+  private async fetchSlides(): Promise<Slide[]> {
+    let url = `${this.config.api.baseUrl}/sign/slides`;
     if (this.config.api.date) {
       url += `?date=${this.config.api.date}`;
     }
 
     const timeoutMs = this.config.api.timeoutSeconds * 1000;
-    console.log(`Fetching standings from ${url}`);
+    console.log(`Fetching slides from ${url}`);
     const startTime = Date.now();
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
-      const headers = this.buildHeaders();
-
       const response = await fetch(url, {
         signal: controller.signal,
-        headers,
+        headers: this.buildHeaders(),
       });
 
       if (!response.ok) {
         throw new Error(`API returned ${response.status}: ${response.statusText}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as SlidesResponse;
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-      console.log(`Standings fetched (${elapsed}s)`);
-      return this.parseStandings(data);
+      console.log(`Slides fetched (${elapsed}s) — ${data.slides.length} slides, generated ${data.generatedAt}`);
+      return data.slides;
     } catch (error: any) {
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
       console.error(`Fetch failed after ${elapsed}s: ${error.message}`);
@@ -128,75 +126,24 @@ export class MLBAPIClient {
     }
   }
 
-  /**
-   * Parse API response into DivisionStandings.
-   *
-   * Expected API response format:
-   * {
-   *   "divisions": [
-   *     {
-   *       "name": "AL West",
-   *       "league": "American League",
-   *       "teams": [
-   *         {
-   *           "name": "Houston Astros",
-   *           "abbreviation": "HOU",
-   *           "rank": 1,
-   *           "wins": 90,
-   *           "losses": 72,
-   *           "gamesBack": "-"
-   *         }
-   *       ]
-   *     }
-   *   ]
-   * }
-   */
-  private parseStandings(data: any): DivisionStandings[] {
-    const divisions: DivisionStandings[] = [];
-
-    for (const div of data.divisions || []) {
-      const teams: TeamStanding[] = (div.teams || []).map((team: any) => ({
-        teamName: team.name,
-        teamAbbreviation: team.abbreviation,
-        divisionRank: team.rank,
-        wins: team.wins,
-        losses: team.losses,
-        gamesBack: team.gamesBack || '-',
-        divisionName: div.name,
-        leagueName: div.league,
-        colors: team.colors ? { primary: team.colors.primary, secondary: team.colors.secondary } : undefined,
-      }));
-
-      teams.sort((a, b) => a.divisionRank - b.divisionRank);
-
-      divisions.push({
-        divisionName: div.name,
-        leagueName: div.league,
-        teams,
-      });
-    }
-
-    return divisions;
-  }
-
-  private saveCache(standings: DivisionStandings[]): void {
+  private saveCache(slides: Slide[]): void {
     try {
-      const cacheData: StandingsCache = {
+      const cacheData: SlidesCache = {
         timestamp: new Date().toISOString(),
-        standings,
+        slides,
       };
 
       const cachePath = path.resolve(this.config.cacheFile);
       const tmpPath = cachePath + '.tmp';
       fs.writeFileSync(tmpPath, JSON.stringify(cacheData, null, 2), { mode: 0o666 });
       fs.renameSync(tmpPath, cachePath);
-      console.log(`Saved standings cache to ${cachePath}`);
+      console.log(`Saved slides cache to ${cachePath}`);
     } catch (error) {
       console.warn('Failed to save cache:', error);
     }
   }
 
-  private loadFromCache(): DivisionStandings[] {
+  private loadFromCache(): Slide[] {
     const cachePath = path.resolve(this.config.cacheFile);
 
     if (!fs.existsSync(cachePath)) {
@@ -206,20 +153,12 @@ export class MLBAPIClient {
 
     try {
       const content = fs.readFileSync(cachePath, 'utf-8');
-      const cacheData: StandingsCache = JSON.parse(content);
-      console.log(`Loaded standings from cache (timestamp: ${cacheData.timestamp})`);
-      return cacheData.standings;
+      const cacheData: SlidesCache = JSON.parse(content);
+      console.log(`Loaded slides from cache (timestamp: ${cacheData.timestamp})`);
+      return cacheData.slides;
     } catch (error) {
       console.error('Failed to load cache:', error);
       return [];
     }
-  }
-
-  getDivision(divisionName: string): DivisionStandings | undefined {
-    const standings = this.cachedStandings || [];
-
-    return standings.find(
-      (div) => div.divisionName.toLowerCase().includes(divisionName.toLowerCase())
-    );
   }
 }

@@ -7,7 +7,7 @@
  */
 
 import { Config } from './config';
-import { DivisionStandings, TeamStanding } from './types';
+import { Slide, SlideType, StandingsSlide, StandingsSlideTeam } from './types';
 
 export interface RenderOptions {
   width: number;
@@ -164,13 +164,23 @@ export class Renderer {
     return this.frameBuffer;
   }
 
-  renderDivision(division: DivisionStandings): FrameBuffer {
+  renderSlide(slide: Slide): FrameBuffer {
+    switch (slide.slideType) {
+      case SlideType.STANDINGS:
+        return this.renderStandingsSlide(slide);
+      default:
+        console.warn(`Unknown slide type: ${(slide as any).slideType}`);
+        return this.renderStatus('UNKNOWN', 'SLIDE');
+    }
+  }
+
+  private renderStandingsSlide(slide: StandingsSlide): FrameBuffer {
     this.frameBuffer.clear();
 
     const lineHeight = 6;
     let y = 1;
 
-    for (const team of division.teams.slice(0, 5)) {
+    for (const team of slide.teams.slice(0, 5)) {
       this.renderTeamLine(team, y);
       y += lineHeight;
     }
@@ -178,9 +188,9 @@ export class Renderer {
     return this.frameBuffer;
   }
 
-  private renderTeamLine(team: TeamStanding, y: number): void {
-    const rankStr = `${team.divisionRank}`;
-    const abbr = team.teamAbbreviation.toUpperCase();
+  private renderTeamLine(team: StandingsSlideTeam, y: number): void {
+    const rankStr = `${team.rank}`;
+    const abbr = team.abbreviation.toUpperCase();
     const record = `${team.wins}-${team.losses}`;
 
     const MIN_BRIGHTNESS = 40;
@@ -194,6 +204,7 @@ export class Renderer {
           ? secondary
           : ensureMinBrightness(primary.r + primary.g + primary.b > 0 ? primary : secondary, MIN_BRIGHTNESS);
     }
+
 
     const recordWidth = this.textWidth(record);
     const recordX = this.config.display.width - recordWidth - 1;

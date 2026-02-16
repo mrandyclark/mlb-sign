@@ -34,7 +34,6 @@ export interface Config {
   api: APIConfig;
   display: DisplayConfig;
   schedule: ScheduleConfig;
-  divisions: string[];
   cacheFile: string;
 }
 
@@ -82,8 +81,7 @@ const DEFAULT_CONFIG: Config = {
     offTime: '23:00',
     timezone: 'America/Los_Angeles',
   },
-  divisions: ['AL West'],
-  cacheFile: 'standings_cache.json',
+  cacheFile: 'slides_cache.json',
 };
 
 function deepMerge<T extends object>(target: T, source: Partial<T>): T {

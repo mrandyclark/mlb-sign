@@ -1,13 +1,14 @@
 /**
  * MLB LED Sign - Main Entry Point
  * 
- * Fetches MLB standings and displays them on an LED matrix.
+ * Fetches slides from the API and displays them on an LED matrix.
  */
 
 import { loadConfig } from './config';
 import { MLBAPIClient } from './api';
 import { Renderer } from './renderer';
 import { createMatrix, isHardwareAvailable, pushFrameToMatrix, MatrixInstance } from './matrix';
+import { Slide } from './types';
 
 async function main(): Promise<void> {
   console.log('MLB LED Sign starting...');
@@ -18,7 +19,6 @@ async function main(): Promise<void> {
   console.log(`  API URL: ${config.api.baseUrl}`);
   console.log(`  Display: ${config.display.width}x${config.display.height}`);
   console.log(`  Brightness: ${config.display.brightness}%`);
-  console.log(`  Divisions: ${config.divisions.join(', ')}`);
 
   const apiClient = new MLBAPIClient(config);
   const renderer = new Renderer(config);
@@ -29,16 +29,17 @@ async function main(): Promise<void> {
   pushFrameToMatrix(matrix, renderer.renderLoading());
   console.log('Showing loading indicator...');
 
-  let currentDivisionIndex = 0;
+  let slides: Slide[] = [];
+  let currentSlideIndex = 0;
   let hasData = false;
   let lastFrame: ReturnType<typeof renderer.renderLoading> | null = null;
 
-  async function updateDisplay(): Promise<void> {
+  async function fetchSlides(): Promise<void> {
     try {
-      const standings = await apiClient.getStandings();
-      
-      if (standings.length === 0) {
-        console.warn('No standings data available');
+      slides = await apiClient.getSlides();
+
+      if (slides.length === 0) {
+        console.warn('No slides available');
         if (!hasData) {
           lastFrame = renderer.renderStatus('OFFLINE', 'RETRYING');
           pushFrameToMatrix(matrix, lastFrame);
@@ -47,32 +48,9 @@ async function main(): Promise<void> {
       }
 
       hasData = true;
-
-      const divisionName = config.divisions[currentDivisionIndex];
-      const division = standings.find(
-        (d) => d.divisionName.toLowerCase().includes(divisionName.toLowerCase())
-      );
-
-      if (!division) {
-        console.warn(`Division "${divisionName}" not found in standings`);
-        currentDivisionIndex = (currentDivisionIndex + 1) % config.divisions.length;
-        return;
-      }
-
-      console.log(`\nDisplaying: ${division.divisionName}`);
-      
-      const frame = renderer.renderDivision(division);
-      lastFrame = frame;
-
-      pushFrameToMatrix(matrix, frame);
-
-      if (!isHardwareAvailable()) {
-        console.log(renderer.toAsciiArt());
-      }
-
-      currentDivisionIndex = (currentDivisionIndex + 1) % config.divisions.length;
+      console.log(`Got ${slides.length} slides`);
     } catch (error) {
-      console.error('Error updating display:', error);
+      console.error('Error fetching slides:', error);
       if (!hasData) {
         lastFrame = renderer.renderStatus('OFFLINE', 'RETRYING');
         pushFrameToMatrix(matrix, lastFrame);
@@ -80,16 +58,40 @@ async function main(): Promise<void> {
     }
   }
 
+  function showNextSlide(): void {
+    if (slides.length === 0) return;
+
+    const slide = slides[currentSlideIndex];
+    console.log(`\nDisplaying slide ${currentSlideIndex + 1}/${slides.length}: ${slide.slideType}${('title' in slide) ? ` — ${slide.title}` : ''}`);
+
+    const frame = renderer.renderSlide(slide);
+    lastFrame = frame;
+    pushFrameToMatrix(matrix, frame);
+
+    if (!isHardwareAvailable()) {
+      console.log(renderer.toAsciiArt());
+    }
+
+    currentSlideIndex = (currentSlideIndex + 1) % slides.length;
+  }
+
+  // Initial fetch
   try {
-    await updateDisplay();
+    await fetchSlides();
+    showNextSlide();
   } catch (error) {
-    console.error('Initial display update failed (will retry):', error);
+    console.error('Initial fetch failed (will retry):', error);
     lastFrame = renderer.renderStatus('OFFLINE', 'RETRYING');
     pushFrameToMatrix(matrix, lastFrame);
   }
 
-  const rotationTimer = setInterval(updateDisplay, config.display.rotationIntervalSeconds * 1000);
+  // Rotate slides on display timer
+  const rotationTimer = setInterval(showNextSlide, config.display.rotationIntervalSeconds * 1000);
   rotationTimer.unref = undefined as any; // prevent unref — keep process alive
+
+  // Refresh slides from API periodically
+  const refreshTimer = setInterval(fetchSlides, config.api.refreshIntervalSeconds * 1000);
+  refreshTimer.unref = undefined as any;
 
   // Watchdog: re-push the last frame every 60s to recover from display dropouts
   const watchdog = setInterval(() => {
@@ -104,6 +106,7 @@ async function main(): Promise<void> {
   const shutdown = () => {
     console.log('\nShutting down...');
     clearInterval(rotationTimer);
+    clearInterval(refreshTimer);
     clearInterval(watchdog);
     matrix.clear();
     matrix.sync();
