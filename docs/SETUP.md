@@ -10,7 +10,7 @@ Use **Raspberry Pi Imager** on macOS (or Windows/Linux).
 
 | Setting | Value |
 |---------|-------|
-| OS | **Raspberry Pi OS (32-bit)** — required for Pi Zero W (armv6l) |
+| OS | **Raspberry Pi OS (64-bit)** recommended for Pi Zero 2 W; 32-bit for Pi Zero W |
 | Hostname | `mlb-sign` |
 | SSH | Enabled (password authentication) |
 | Username | `mrandyclark` (or your preferred username) |
@@ -75,11 +75,13 @@ The easiest way to set everything up is the deploy script, run from your **local
 ```
 
 This script handles:
-- Installing Node.js v20.17.0 (auto-detects armv6l vs armv7l architecture)
+- Installing Node.js v20.17.0 (auto-detects armv6l, armv7l, and aarch64)
 - Installing pnpm
 - Cloning the repo to `~/mlb-sign`
 - Installing dependencies
+- Compiling the `rpi-led-matrix` native addon
 - Building TypeScript
+- Installing and starting the systemd service
 
 ### Manual Deploy (alternative)
 
@@ -116,36 +118,27 @@ pnpm run build
 
 ---
 
-## 7. Test the Sign
+## 7. Verify
+
+The deploy script automatically installs and starts the systemd service. Check it's running:
 
 ```bash
+ssh mrandyclark@mlb-sign.local
+sudo systemctl status mlb-sign
+sudo journalctl -u mlb-sign -f      # Live logs
+```
+
+You should see "LOADING" on the LED panel, then standings after a few seconds.
+
+To test manually instead (e.g. for debugging):
+
+```bash
+sudo systemctl stop mlb-sign
 cd ~/mlb-sign
 sudo node dist/index.js
 ```
 
-You should see:
-1. "LOADING" on the LED panel
-2. After ~30 seconds (API fetch), standings appear
-3. Divisions rotate every 10 seconds
-
-`sudo` is required for GPIO access to drive the LED matrix.
-
-Press `Ctrl+C` to stop.
-
----
-
-## 8. Install as a Boot Service
-
-To auto-start the sign on power-on:
-
-```bash
-sudo cp ~/mlb-sign/scripts/mlb-sign.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable mlb-sign
-sudo systemctl start mlb-sign
-```
-
-After this, the sign starts automatically whenever the Pi boots. Unplug and replug — it just works.
+`sudo` is required for GPIO access. Press `Ctrl+C` to stop.
 
 ### Useful service commands
 
@@ -158,19 +151,17 @@ sudo systemctl stop mlb-sign        # Stop the sign
 
 ---
 
-## 9. Updating the Sign
+## 8. Updating the Sign
 
-After pushing code changes to GitHub:
+After pushing code changes to GitHub, re-run the deploy script from your Mac:
 
 ```bash
-# Option A: Run the deploy script from your local machine
 ./scripts/deploy.sh mrandyclark@mlb-sign.local
-
-# Option B: Update manually on the Pi
-ssh mrandyclark@mlb-sign.local
-cd ~/mlb-sign && git pull && pnpm run build
-sudo systemctl restart mlb-sign
 ```
+
+This pulls the latest code, rebuilds, and restarts the service automatically.
+
+The service also runs `auto-update.sh` on every restart, which pulls from GitHub before starting.
 
 ---
 
@@ -222,69 +213,27 @@ sudo rm ~/mlb-sign/standings_cache.json
 
 ## New Sign Quick Setup
 
-If you've already done this once and just need to set up a new sign (or re-flash an existing one), here's the condensed version:
+If you've already done this once and just need to set up a new sign (or re-flash an existing one), it's two commands after flashing.
 
 ### 1. Flash & boot
 
-Flash **Raspberry Pi OS (32-bit)** with Raspberry Pi Imager. Set hostname to `mlb-sign` (or `mlb-sign-2`, etc.), enable SSH, configure WiFi. Insert card, power on, wait 60s.
+Flash **Raspberry Pi OS (64-bit) Lite** with Raspberry Pi Imager. Set hostname, username, WiFi, and enable SSH. Insert card, power on, wait ~60 seconds.
 
-> **Pi Zero 2 W note:** You can use 32-bit or 64-bit OS. The deploy script auto-detects the architecture and installs the correct Node.js build.
-
-### 2. SSH in and prep
+### 2. First-time setup (from your Mac)
 
 ```bash
-ssh mrandyclark@mlb-sign.local
-sudo apt update && sudo apt upgrade -y
-sudo apt install -y build-essential git python3
-sudo tee /etc/modprobe.d/blacklist-snd.conf <<< "blacklist snd_bcm2835"
-sudo reboot
+./scripts/setup-pi.sh mrandyclark@<hostname>.local <sign-id>
 ```
 
-### 3. Set the sign ID
+This handles system updates, build tools, sound module blacklist, sign ID, and reboots the Pi.
 
-After reboot, SSH back in and assign a unique ID:
+### 3. Deploy (from your Mac, after reboot)
 
 ```bash
-echo "sign-001" > ~/.sign-id
+./scripts/deploy.sh mrandyclark@<hostname>.local
 ```
 
-Use a different ID for each sign (e.g. `sign-001`, `sign-002`).
-
-### 4. Deploy from your Mac
-
-```bash
-./scripts/deploy.sh mrandyclark@mlb-sign.local
-```
-
-### 5. Compile the native addon
-
-The deploy script installs dependencies, but `rpi-led-matrix` needs a manual compile the first time:
-
-```bash
-ssh mrandyclark@mlb-sign.local
-cd ~/mlb-sign
-sudo npx node-gyp rebuild --directory=node_modules/.pnpm/rpi-led-matrix@1.15.0/node_modules/rpi-led-matrix
-```
-
-This takes several minutes on the Pi Zero, less on the Pi Zero 2 W.
-
-### 6. Test
-
-```bash
-cd ~/mlb-sign
-sudo node dist/index.js
-```
-
-You should see "LOADING" on the panel, then standings after ~30s.
-
-### 7. Enable auto-start
-
-```bash
-sudo cp ~/mlb-sign/scripts/mlb-sign.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable mlb-sign
-sudo systemctl start mlb-sign
-```
+This handles Node.js, pnpm, repo, dependencies, native addon compilation, TypeScript build, and systemd service.
 
 Done. The sign will auto-start on boot and auto-update from GitHub.
 
@@ -294,27 +243,17 @@ Done. The sign will auto-start on boot and auto-update from GitHub.
 
 If you're swapping the Pi (e.g. upgrading from Pi Zero W to Pi Zero 2 W) but keeping the same sign:
 
-1. Flash a new SD card (or move the existing one — it should boot on the Zero 2 W)
-2. If using a new SD card, follow the **New Sign Quick Setup** above with the **same sign ID**
-3. If moving the existing SD card, recompile the native addon for the new architecture:
+1. Flash a new SD card
+2. Follow the **New Sign Quick Setup** above with the **same sign ID**
 
-```bash
-cd ~/mlb-sign
-sudo npx node-gyp rebuild --directory=node_modules/.pnpm/rpi-led-matrix@1.15.0/node_modules/rpi-led-matrix
-sudo systemctl restart mlb-sign
-```
+The deploy script handles everything — native addon compilation, service install, etc.
 
 ---
 
 ## Setup Checklist (per sign)
 
-- [ ] SD card flashed with Raspberry Pi OS
+- [ ] SD card flashed with Raspberry Pi OS (64-bit for Pi Zero 2 W)
 - [ ] SSH access verified
-- [ ] System updated
-- [ ] Build tools installed (`build-essential`, `git`, `python3`)
-- [ ] Sound module blacklisted (`snd_bcm2835`)
-- [ ] Sign ID set (`~/.sign-id`)
-- [ ] Deploy script run (Node.js, pnpm, repo, build)
-- [ ] `rpi-led-matrix` native addon compiled
-- [ ] Sign tested manually (`sudo node dist/index.js`)
-- [ ] Systemd service enabled for auto-start
+- [ ] `setup-pi.sh` run (updates, build tools, sound blacklist, sign ID, reboot)
+- [ ] `deploy.sh` run (Node.js, pnpm, repo, deps, native addon, build, service)
+- [ ] Sign displaying standings on LED matrix
