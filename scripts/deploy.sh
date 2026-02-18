@@ -59,6 +59,9 @@ echo "Pi architecture: ${PI_ARCH}"
 if [ "${PI_ARCH}" = "armv6l" ]; then
   NODE_DISTRO="linux-armv6l"
   NODE_URL="https://unofficial-builds.nodejs.org/download/release/${NODE_VERSION}/node-${NODE_VERSION}-${NODE_DISTRO}.tar.xz"
+elif [ "${PI_ARCH}" = "aarch64" ]; then
+  NODE_DISTRO="linux-arm64"
+  NODE_URL="https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}-${NODE_DISTRO}.tar.xz"
 else
   NODE_DISTRO="linux-armv7l"
   NODE_URL="https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}-${NODE_DISTRO}.tar.xz"
@@ -120,28 +123,50 @@ echo "--- Step 4: Installing dependencies ---"
 remote "cd ${REMOTE_DIR} && pnpm install"
 
 # ---------------------------------------------------------------------------
-# Step 5: Build TypeScript
+# Step 5: Compile rpi-led-matrix native addon
 # ---------------------------------------------------------------------------
 echo ""
-echo "--- Step 5: Building ---"
+echo "--- Step 5: Compiling rpi-led-matrix native addon ---"
+RPI_LED_DIR="node_modules/.pnpm/rpi-led-matrix@1.15.0/node_modules/rpi-led-matrix"
+if remote "test -f ${REMOTE_DIR}/${RPI_LED_DIR}/binding.gyp"; then
+  remote "cd ${REMOTE_DIR} && sudo npx node-gyp rebuild --directory=${RPI_LED_DIR}"
+  echo "Native addon compiled."
+else
+  echo "rpi-led-matrix not found — skipping native compile (dev machine?)"
+fi
+
+# ---------------------------------------------------------------------------
+# Step 6: Build TypeScript
+# ---------------------------------------------------------------------------
+echo ""
+echo "--- Step 6: Building ---"
 remote "cd ${REMOTE_DIR} && pnpm run build"
+
+# ---------------------------------------------------------------------------
+# Step 7: Install and start systemd service
+# ---------------------------------------------------------------------------
+echo ""
+echo "--- Step 7: Installing systemd service ---"
+remote "sudo cp ${REMOTE_DIR}/scripts/mlb-sign.service /etc/systemd/system/"
+remote "sudo systemctl daemon-reload"
+remote "sudo systemctl enable mlb-sign"
+
+if remote "sudo systemctl is-active mlb-sign >/dev/null 2>&1"; then
+  echo "Service already running — restarting..."
+  remote "sudo systemctl restart mlb-sign"
+else
+  echo "Starting service..."
+  remote "sudo systemctl start mlb-sign"
+fi
 
 # ---------------------------------------------------------------------------
 # Done
 # ---------------------------------------------------------------------------
 echo ""
-echo "==> Deploy complete!"
+echo "==> Deploy complete! Sign is running."
 echo ""
-echo "To run the sign manually:"
+echo "Useful commands:"
 echo "  ssh ${TARGET}"
-echo "  cd ${REMOTE_DIR}"
-echo "  sudo node dist/index.js"
-echo ""
-echo "Note: sudo is required for GPIO access on the LED matrix."
-echo ""
-echo "To install as a systemd service (auto-start on boot):"
-echo "  ssh ${TARGET}"
-echo "  sudo cp ${REMOTE_DIR}/scripts/mlb-sign.service /etc/systemd/system/"
-echo "  sudo systemctl daemon-reload"
-echo "  sudo systemctl enable mlb-sign"
-echo "  sudo systemctl start mlb-sign"
+echo "  sudo systemctl status mlb-sign      # Check status"
+echo "  sudo journalctl -u mlb-sign -f      # Live logs"
+echo "  sudo systemctl restart mlb-sign     # Restart"
