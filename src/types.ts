@@ -4,6 +4,7 @@
 export enum SlideType {
   LAST_GAME = 'lastGame',
   NEXT_GAME = 'nextGame',
+  OPENER_COUNTDOWN = 'openerCountdown',
   STANDINGS = 'standings',
 }
 
@@ -72,9 +73,29 @@ export interface NextGameSlide {
 }
 
 /**
+ * An opener countdown slide showing days until a team's first regular season game
+ */
+export interface OpenerCountdownSlide {
+  daysUntil: number;
+  gameDate: string;
+  opponent: {
+    abbreviation: string;
+    colors?: { primary: string; secondary: string };
+    name: string;
+  };
+  slideType: SlideType.OPENER_COUNTDOWN;
+  team: {
+    abbreviation: string;
+    colors?: { primary: string; secondary: string };
+    name: string;
+  };
+  venue: string;
+}
+
+/**
  * Union of all possible slide types
  */
-export type Slide = StandingsSlide | LastGameSlide | NextGameSlide;
+export type Slide = StandingsSlide | LastGameSlide | NextGameSlide | OpenerCountdownSlide;
 
 /**
  * Response from the /api/external/sign/slides endpoint

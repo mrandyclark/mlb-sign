@@ -10,7 +10,7 @@ import { Renderer } from './renderer';
 import { createMatrix, isHardwareAvailable, pushFrameToMatrix, MatrixInstance } from './matrix';
 import { SignExternalConfigResponse, Slide } from './types';
 
-const PAYLOAD_VERSION = 2;
+const PAYLOAD_VERSION = 3;
 
 async function main(): Promise<void> {
   console.log('MLB LED Sign starting...');

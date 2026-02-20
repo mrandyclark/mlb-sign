@@ -7,7 +7,7 @@
  */
 
 import { Config } from './config';
-import { LastGameSlide, NextGameSlide, Slide, SlideType, StandingsSlide, StandingsSlideTeam } from './types';
+import { LastGameSlide, NextGameSlide, OpenerCountdownSlide, Slide, SlideType, StandingsSlide, StandingsSlideTeam } from './types';
 
 export interface RenderOptions {
   width: number;
@@ -174,6 +174,8 @@ export class Renderer {
         return this.renderLastGameSlide(slide);
       case SlideType.NEXT_GAME:
         return this.renderNextGameSlide(slide);
+      case SlideType.OPENER_COUNTDOWN:
+        return this.renderOpenerCountdownSlide(slide);
       default:
         console.warn(`Unknown slide type: ${(slide as any).slideType}`);
         return this.renderStatus('UNKNOWN', 'SLIDE');
@@ -315,6 +317,44 @@ export class Renderer {
     const dateStr = this.formatGameDate(slide.gameDate);
     const dateW = this.textWidth(dateStr);
     this.drawText(dateStr, Math.floor((w - dateW) / 2), 24, 150, 150, 150);
+
+    return this.frameBuffer;
+  }
+
+  private renderOpenerCountdownSlide(slide: OpenerCountdownSlide): FrameBuffer {
+    this.frameBuffer.clear();
+    const w = this.config.display.width;
+
+    const teamColor = this.getTeamColor(slide.team.colors);
+    const oppColor = this.getTeamColor(slide.opponent.colors);
+
+    // Row 1 (y=2): days count — large, centered, team color
+    const daysNum = `${slide.daysUntil}`;
+    const daysNumW = this.textWidth(daysNum);
+    this.drawText(daysNum, Math.floor((w - daysNumW) / 2), 2, teamColor.r, teamColor.g, teamColor.b);
+
+    // Row 2 (y=9): "DAYS" (or "DAY" if 1) — centered, dim
+    const daysLabel = slide.daysUntil === 1 ? 'DAY' : 'DAYS';
+    const daysLabelW = this.textWidth(daysLabel);
+    this.drawText(daysLabel, Math.floor((w - daysLabelW) / 2), 9, 100, 100, 100);
+
+    // Row 3 (y=17): "TIL CIN OPENER" — centered, team abbr in team color
+    const tilText = 'TIL ';
+    const abbrText = slide.team.abbreviation;
+    const openerText = ' OPENER';
+    const row3W = this.textWidth(tilText + abbrText + openerText);
+    let x3 = Math.floor((w - row3W) / 2);
+    x3 = this.drawText(tilText, x3, 17, 150, 150, 150);
+    x3 = this.drawText(abbrText, x3, 17, teamColor.r, teamColor.g, teamColor.b);
+    this.drawText(openerText, x3, 17, 150, 150, 150);
+
+    // Row 4 (y=25): "VS OPP" — centered, opponent abbr in opponent color
+    const vsText = 'VS ';
+    const oppText = slide.opponent.abbreviation;
+    const row4W = this.textWidth(vsText + oppText);
+    let x4 = Math.floor((w - row4W) / 2);
+    x4 = this.drawText(vsText, x4, 25, 150, 150, 150);
+    this.drawText(oppText, x4, 25, oppColor.r, oppColor.g, oppColor.b);
 
     return this.frameBuffer;
   }
