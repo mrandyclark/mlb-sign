@@ -8,7 +8,9 @@ import { loadConfig } from './config';
 import { MLBAPIClient } from './api';
 import { Renderer } from './renderer';
 import { createMatrix, isHardwareAvailable, pushFrameToMatrix, MatrixInstance } from './matrix';
-import { SignConfig, Slide } from './types';
+import { SignExternalConfigResponse, Slide } from './types';
+
+const PAYLOAD_VERSION = 2;
 
 async function main(): Promise<void> {
   console.log('MLB LED Sign starting...');
@@ -35,22 +37,29 @@ async function main(): Promise<void> {
   let lastFrame: ReturnType<typeof renderer.renderLoading> | null = null;
   let rotationIntervalMs = config.display.rotationIntervalSeconds * 1000;
 
-  function applySignConfig(signConfig: SignConfig): void {
-    if (signConfig.display?.brightness !== undefined) {
-      config.display.brightness = signConfig.display.brightness;
-      matrix.brightness(signConfig.display.brightness);
-      console.log(`  Brightness updated: ${signConfig.display.brightness}%`);
+  function applySignConfig(response: SignExternalConfigResponse): void {
+    // Check payload version — if the server expects a newer version, log a warning
+    if (response.payloadVersion !== PAYLOAD_VERSION) {
+      console.warn(`⚠ Payload version mismatch: sign=${PAYLOAD_VERSION}, server=${response.payloadVersion}. Consider updating the sign software.`);
     }
-    if (signConfig.display?.rotationIntervalSeconds !== undefined) {
-      config.display.rotationIntervalSeconds = signConfig.display.rotationIntervalSeconds;
-      rotationIntervalMs = signConfig.display.rotationIntervalSeconds * 1000;
-      console.log(`  Rotation interval updated: ${signConfig.display.rotationIntervalSeconds}s`);
+
+    const { display, schedule } = response.config;
+
+    if (display.brightness !== undefined) {
+      config.display.brightness = display.brightness;
+      matrix.brightness(display.brightness);
+      console.log(`  Brightness updated: ${display.brightness}%`);
     }
-    if (signConfig.schedule) {
-      if (signConfig.schedule.enabled !== undefined) config.schedule.enabled = signConfig.schedule.enabled;
-      if (signConfig.schedule.onTime !== undefined) config.schedule.onTime = signConfig.schedule.onTime;
-      if (signConfig.schedule.offTime !== undefined) config.schedule.offTime = signConfig.schedule.offTime;
-      if (signConfig.schedule.timezone !== undefined) config.schedule.timezone = signConfig.schedule.timezone;
+    if (display.rotationIntervalSeconds !== undefined) {
+      config.display.rotationIntervalSeconds = display.rotationIntervalSeconds;
+      rotationIntervalMs = display.rotationIntervalSeconds * 1000;
+      console.log(`  Rotation interval updated: ${display.rotationIntervalSeconds}s`);
+    }
+    if (schedule) {
+      if (schedule.enabled !== undefined) config.schedule.enabled = schedule.enabled;
+      if (schedule.onTime !== undefined) config.schedule.onTime = schedule.onTime;
+      if (schedule.offTime !== undefined) config.schedule.offTime = schedule.offTime;
+      if (schedule.timezone !== undefined) config.schedule.timezone = schedule.timezone;
       console.log(`  Schedule updated: ${config.schedule.enabled ? `${config.schedule.onTime}-${config.schedule.offTime} ${config.schedule.timezone}` : 'disabled'}`);
     }
   }

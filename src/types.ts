@@ -2,6 +2,8 @@
  * Slide types that can be displayed on a sign
  */
 export enum SlideType {
+  LAST_GAME = 'lastGame',
+  NEXT_GAME = 'nextGame',
   STANDINGS = 'standings',
 }
 
@@ -28,10 +30,51 @@ export interface StandingsSlide {
 }
 
 /**
- * Union of all possible slide types
- * Add new slide interfaces here as they are created
+ * Team data for a box score (last game) slide
  */
-export type Slide = StandingsSlide;
+export interface BoxScoreTeam {
+  abbreviation: string;
+  colors?: { primary: string; secondary: string };
+  errors: number;
+  hits: number;
+  name: string;
+  runs: number;
+}
+
+/**
+ * A last game slide showing a completed game's box score
+ */
+export interface LastGameSlide {
+  awayTeam: BoxScoreTeam;
+  gameDate: string;
+  homeTeam: BoxScoreTeam;
+  slideType: SlideType.LAST_GAME;
+}
+
+/**
+ * A next game slide showing an upcoming game preview
+ */
+export interface NextGameSlide {
+  gameDate: string;
+  isHome: boolean;
+  opponent: {
+    abbreviation: string;
+    colors?: { primary: string; secondary: string };
+    name: string;
+  };
+  slideType: SlideType.NEXT_GAME;
+  team: {
+    abbreviation: string;
+    colors?: { primary: string; secondary: string };
+    name: string;
+  };
+  venue: string;
+}
+
+/**
+ * Union of all possible slide types
+ */
+export type Slide = StandingsSlide | LastGameSlide | NextGameSlide;
 
 /**
  * Response from the /api/external/sign/slides endpoint
@@ -42,18 +85,26 @@ export interface SlidesResponse {
 }
 
 /**
- * Response from the /api/external/sign/config endpoint
+ * Response from the /api/external/sign/config endpoint (v2)
  */
-export interface SignConfig {
-  display?: {
-    brightness?: number;
-    rotationIntervalSeconds?: number;
-  };
-  schedule?: {
-    enabled?: boolean;
-    onTime?: string;
-    offTime?: string;
-    timezone?: string;
+export interface SignExternalConfigResponse {
+  payloadVersion: number;
+  config: {
+    display: {
+      brightness: number;
+      rotationIntervalSeconds: number;
+    };
+    schedule: {
+      enabled: boolean;
+      onTime: string;
+      offTime: string;
+      timezone: string;
+    };
+    content: {
+      standingsDivisions: string[];
+      lastGameTeamIds: string[];
+      nextGameTeamIds: string[];
+    };
   };
 }
 

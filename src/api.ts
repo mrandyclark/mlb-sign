@@ -6,7 +6,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { Config } from './config';
-import { SignConfig, Slide, SlidesCache, SlidesResponse } from './types';
+import { SignExternalConfigResponse, Slide, SlidesCache, SlidesResponse } from './types';
 
 export class MLBAPIClient {
   private config: Config;
@@ -97,7 +97,7 @@ export class MLBAPIClient {
    * Fetch sign-specific configuration from the API.
    * Returns null if the endpoint is unavailable or the sign has no config.
    */
-  async fetchSignConfig(): Promise<SignConfig | null> {
+  async fetchSignConfig(): Promise<SignExternalConfigResponse | null> {
     const url = `${this.config.api.baseUrl}/sign/config`;
     console.log(`Fetching sign config from ${url}`);
 
@@ -115,7 +115,7 @@ export class MLBAPIClient {
         return null;
       }
 
-      const data = await response.json() as SignConfig;
+      const data = await response.json() as SignExternalConfigResponse;
       console.log('Sign config received');
       return data;
     } catch (error: any) {
