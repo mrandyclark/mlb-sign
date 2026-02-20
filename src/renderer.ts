@@ -227,10 +227,12 @@ export class Renderer {
     const gridColor = { r: 60, g: 60, b: 60 };
     const headerColor = { r: 120, g: 120, b: 120 };
 
-    // "FINAL" label centered at top
+    // Top row: game date (left) and FINAL (right)
+    const dateStr = this.formatGameDate(slide.gameDate);
+    this.drawText(dateStr, 1, labelY, 120, 120, 120);
     const finalLabel = 'FINAL';
     const finalW = this.textWidth(finalLabel);
-    this.drawText(finalLabel, Math.floor((col1 + tableRight - finalW) / 2), labelY, 80, 80, 80);
+    this.drawText(finalLabel, tableRight - finalW, labelY, 80, 80, 80);
 
     // Column headers (H, R, E)
     this.drawTextCentered('H', col1, col1 + colW, headerY, headerColor.r, headerColor.g, headerColor.b);
