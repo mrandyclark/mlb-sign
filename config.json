@@ -7,11 +7,11 @@
     "date": "2025-08-23"
   },
   "display": {
-    "brightness": 60,
+    "brightness": 50,
     "rotationIntervalSeconds": 10,
     "width": 64,
     "height": 32,
-    "gpioSlowdown": 4
+    "gpioSlowdown": 5
   },
   "schedule": {
     "enabled": false,
