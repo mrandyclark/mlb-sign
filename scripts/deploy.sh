@@ -16,7 +16,18 @@
 #
 set -euo pipefail
 
+FORCE_REBUILD=false
+for arg in "$@"; do
+  case "$arg" in
+    --force) FORCE_REBUILD=true ;;
+  esac
+done
+
+# First non-flag argument is the target
 TARGET="${1:-mrandyclark@mlb-sign.local}"
+if [ "$TARGET" = "--force" ]; then
+  TARGET="${2:-mrandyclark@mlb-sign.local}"
+fi
 REMOTE_USER="${TARGET%%@*}"
 REMOTE_DIR="/home/${REMOTE_USER}/mlb-sign"
 REPO_URL="https://github.com/mrandyclark/mlb-sign.git"
@@ -123,12 +134,16 @@ echo "--- Step 4: Installing dependencies ---"
 remote "cd ${REMOTE_DIR} && pnpm install"
 
 # ---------------------------------------------------------------------------
-# Step 5: Compile rpi-led-matrix native addon
+# Step 5: Compile rpi-led-matrix native addon (skip if already built)
 # ---------------------------------------------------------------------------
 echo ""
-echo "--- Step 5: Compiling rpi-led-matrix native addon ---"
+echo "--- Step 5: Checking rpi-led-matrix native addon ---"
 RPI_LED_DIR="node_modules/.pnpm/rpi-led-matrix@1.15.0/node_modules/rpi-led-matrix"
-if remote "test -f ${REMOTE_DIR}/${RPI_LED_DIR}/binding.gyp"; then
+ADDON_PATH="${RPI_LED_DIR}/build/Release/rpi-led-matrix.node"
+if [ "$FORCE_REBUILD" = false ] && remote "test -f ${REMOTE_DIR}/${ADDON_PATH}"; then
+  echo "Native addon already compiled — skipping. (Use --force to recompile)"
+elif remote "test -f ${REMOTE_DIR}/${RPI_LED_DIR}/binding.gyp"; then
+  echo "Compiling native addon (this takes a few minutes)..."
   remote "cd ${REMOTE_DIR} && sudo npx node-gyp rebuild --directory=${RPI_LED_DIR}"
   echo "Native addon compiled."
 else

@@ -195,7 +195,7 @@ export class Renderer {
   }
 
   private getTeamColor(colors?: { primary: string; secondary: string }): { r: number; g: number; b: number } {
-    const MIN_BRIGHTNESS = 70;
+    const MIN_BRIGHTNESS = 40;
     if (!colors) return { r: 255, g: 255, b: 255 };
     const primary = parseHexColor(colors.primary);
     const secondary = parseHexColor(colors.secondary);
