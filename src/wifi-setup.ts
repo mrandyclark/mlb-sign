@@ -397,21 +397,18 @@ export function startWifiSetupBLE(callbacks: WifiSetupCallbacks): (() => void) |
       console.log('[ble] Getting BlueZ proxy object...');
       const bluezObj = await bus.getProxyObject(BLUEZ_SERVICE, ADAPTER_PATH);
 
-      // Power on adapter (may already be on, or rfkill-blocked)
-      const adapterProps = bluezObj.getInterface('org.freedesktop.DBus.Properties');
+      // Power on adapter via bluetoothctl (handles rfkill + timing reliably)
       try {
-        // Unblock Bluetooth via rfkill first (no-op if not blocked)
-        try { execSync('rfkill unblock bluetooth 2>/dev/null', { timeout: 3000 }); } catch { /* ok */ }
-
-        const powered = await adapterProps.Get('org.bluez.Adapter1', 'Powered');
-        console.log('[ble] Adapter currently powered:', powered?.value ?? powered);
-        if (!powered?.value) {
-          await adapterProps.Set('org.bluez.Adapter1', 'Powered', new Variant('b', true));
-        }
+        execSync('rfkill unblock bluetooth 2>/dev/null', { timeout: 3000 });
+        execSync('bluetoothctl power on 2>/dev/null', { timeout: 5000 });
         console.log('[ble] Bluetooth adapter powered on');
       } catch (powerErr: any) {
         console.warn('[ble] Power-on warning (continuing):', powerErr.message || powerErr);
       }
+
+      const adapterProps = bluezObj.getInterface('org.freedesktop.DBus.Properties');
+      const powered = await adapterProps.Get('org.bluez.Adapter1', 'Powered');
+      console.log('[ble] Adapter powered:', powered?.value ?? powered);
 
       // Register advertisement
       console.log('[ble] Registering advertisement...');
