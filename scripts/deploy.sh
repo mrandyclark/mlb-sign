@@ -163,7 +163,7 @@ remote "cd ${REMOTE_DIR} && pnpm run build"
 echo ""
 echo "--- Step 6b: Installing D-Bus policy ---"
 remote "sudo cp ${REMOTE_DIR}/scripts/com.mlbsign.conf /etc/dbus-1/system.d/"
-remote "sudo systemctl reload dbus 2>/dev/null || true"
+remote "sudo dbus-send --system --type=method_call --dest=org.freedesktop.DBus /org/freedesktop/DBus org.freedesktop.DBus.ReloadConfig 2>/dev/null || true"
 echo "D-Bus policy installed."
 
 # ---------------------------------------------------------------------------
