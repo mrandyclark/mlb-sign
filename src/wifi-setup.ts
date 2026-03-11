@@ -48,12 +48,34 @@ let bleno: any = null;
  * Try to load bleno. Returns false if not available (dev machine).
  */
 function loadBleno(): boolean {
+  // Step 1: Can we even resolve the module path?
+  try {
+    const resolved = require.resolve('@abandonware/bleno');
+    console.log('[ble] bleno resolved at:', resolved);
+  } catch (e: any) {
+    console.warn('[ble] bleno not resolvable:', e.message?.split('\n')[0]);
+    console.warn('[ble] __dirname:', __dirname);
+    console.warn('[ble] cwd:', process.cwd());
+    return false;
+  }
+
+  // Step 2: Can we load bluetooth-hci-socket (bleno's key native dep)?
+  try {
+    const hciPath = require.resolve('@abandonware/bluetooth-hci-socket');
+    console.log('[ble] bluetooth-hci-socket resolved at:', hciPath);
+  } catch (e: any) {
+    console.warn('[ble] bluetooth-hci-socket not resolvable:', e.message?.split('\n')[0]);
+  }
+
+  // Step 3: Try to actually load bleno
   try {
     bleno = require('@abandonware/bleno');
+    console.log('[ble] bleno loaded successfully');
     return true;
-  } catch (error) {
-    console.warn('[ble] @abandonware/bleno not available — BLE setup disabled');
-    console.warn('[ble] Load error:', error);
+  } catch (error: any) {
+    console.warn('[ble] @abandonware/bleno failed to load — BLE setup disabled');
+    console.warn('[ble] Error:', error.message?.split('\n')[0]);
+    console.warn('[ble] Code:', error.code);
     return false;
   }
 }
