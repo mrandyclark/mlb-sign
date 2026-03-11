@@ -166,6 +166,58 @@ export class Renderer {
     return this.frameBuffer;
   }
 
+  renderSetupMode(status: 'waiting' | 'connecting' | 'success' | 'failed'): FrameBuffer {
+    this.frameBuffer.clear();
+    const w = this.config.display.width;
+
+    // Row 1: "WIFI" in yellow
+    const wifiText = 'WIFI';
+    const wifiW = this.textWidth(wifiText);
+    this.drawText(wifiText, Math.floor((w - wifiW) / 2), 2, 255, 200, 0);
+
+    // Row 2: "SETUP" in white
+    const setupText = 'SETUP';
+    const setupW = this.textWidth(setupText);
+    this.drawText(setupText, Math.floor((w - setupW) / 2), 9, 200, 200, 200);
+
+    // Row 3: status-dependent message
+    let line3 = '';
+    let r3 = 100, g3 = 100, b3 = 255; // blue default
+    switch (status) {
+      case 'waiting':
+        line3 = 'BLUETOOTH';
+        r3 = 50; g3 = 100; b3 = 255;
+        break;
+      case 'connecting':
+        line3 = 'CONNECTING';
+        r3 = 255; g3 = 200; b3 = 0;
+        break;
+      case 'success':
+        line3 = 'CONNECTED';
+        r3 = 0; g3 = 200; b3 = 0;
+        break;
+      case 'failed':
+        line3 = 'FAILED';
+        r3 = 255; g3 = 50; b3 = 50;
+        break;
+    }
+    const line3W = this.textWidth(line3);
+    this.drawText(line3, Math.floor((w - line3W) / 2), 17, r3, g3, b3);
+
+    // Row 4: instructions
+    if (status === 'waiting') {
+      const line4 = 'USE APP';
+      const line4W = this.textWidth(line4);
+      this.drawText(line4, Math.floor((w - line4W) / 2), 25, 100, 100, 100);
+    } else if (status === 'failed') {
+      const line4 = 'TRY AGAIN';
+      const line4W = this.textWidth(line4);
+      this.drawText(line4, Math.floor((w - line4W) / 2), 25, 100, 100, 100);
+    }
+
+    return this.frameBuffer;
+  }
+
   renderSlide(slide: Slide): FrameBuffer {
     switch (slide.slideType) {
       case SlideType.STANDINGS:

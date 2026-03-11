@@ -111,7 +111,7 @@ fi
 # ---------------------------------------------------------------------------
 echo ""
 echo "--- Step 2: Ensuring build tools ---"
-remote "sudo apt-get install -y --no-install-recommends build-essential git python3 2>/dev/null || true"
+remote "sudo apt-get install -y --no-install-recommends build-essential git python3 bluetooth bluez libbluetooth-dev 2>/dev/null || true"
 
 # ---------------------------------------------------------------------------
 # Step 3: Clone or pull the repo
@@ -148,6 +148,27 @@ elif remote "test -f ${REMOTE_DIR}/${RPI_LED_DIR}/binding.gyp"; then
   echo "Native addon compiled."
 else
   echo "rpi-led-matrix not found — skipping native compile (dev machine?)"
+fi
+
+# ---------------------------------------------------------------------------
+# Step 5b: Compile @abandonware/bleno native addon (skip if already built)
+# ---------------------------------------------------------------------------
+echo ""
+echo "--- Step 5b: Checking bleno native addon ---"
+BLENO_DIR=$(remote "ls -d ${REMOTE_DIR}/node_modules/.pnpm/@abandonware+bleno@*/node_modules/@abandonware/bleno 2>/dev/null || true")
+if [ -n "$BLENO_DIR" ]; then
+  BLENO_ADDON="${BLENO_DIR}/build/Release/bleno.node"
+  if [ "$FORCE_REBUILD" = false ] && remote "test -f ${BLENO_ADDON}"; then
+    echo "Bleno native addon already compiled — skipping. (Use --force to recompile)"
+  elif remote "test -f ${BLENO_DIR}/binding.gyp"; then
+    echo "Compiling bleno native addon..."
+    remote "cd ${REMOTE_DIR} && sudo npx node-gyp rebuild --directory=${BLENO_DIR}"
+    echo "Bleno native addon compiled."
+  else
+    echo "bleno binding.gyp not found — skipping"
+  fi
+else
+  echo "bleno not installed — skipping native compile"
 fi
 
 # ---------------------------------------------------------------------------

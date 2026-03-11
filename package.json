@@ -19,6 +19,7 @@
   },
   "dependencies": {},
   "optionalDependencies": {
+    "@abandonware/bleno": "^0.7.1",
     "rpi-led-matrix": "^1.0.0"
   }
 }

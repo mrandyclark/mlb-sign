@@ -1,7 +1,7 @@
 [Unit]
 Description=MLB LED Sign
-After=network-online.target
-Wants=network-online.target
+After=bluetooth.target
+Wants=network-online.target bluetooth.target
 StartLimitIntervalSec=300
 StartLimitBurst=5
 
@@ -10,7 +10,7 @@ Type=simple
 WorkingDirectory=/home/mrandyclark/mlb-sign
 Environment=NODE_ENV=production
 Environment=PATH=/usr/local/bin:/usr/bin:/bin
-ExecStartPre=/bin/sleep 10
+ExecStartPre=/bin/sleep 5
 ExecStartPre=/bin/bash /home/mrandyclark/mlb-sign/scripts/auto-update.sh
 ExecStart=/usr/local/bin/node /home/mrandyclark/mlb-sign/dist/index.js
 Restart=always

@@ -9,8 +9,49 @@ import { MLBAPIClient } from './api';
 import { Renderer } from './renderer';
 import { createMatrix, isHardwareAvailable, pushFrameToMatrix, MatrixInstance } from './matrix';
 import { SignExternalConfigResponse, Slide } from './types';
+import { needsWifiSetup } from './wifi';
+import { startWifiSetupBLE } from './wifi-setup';
 
 const PAYLOAD_VERSION = 3;
+
+/**
+ * Wait for WiFi to be configured via BLE before continuing.
+ * Shows setup screen on the LED matrix and blocks until WiFi connects.
+ */
+function waitForWifiSetup(renderer: Renderer, matrix: MatrixInstance): Promise<void> {
+  return new Promise((resolve) => {
+    console.log('No WiFi configured — waiting for BLE setup...');
+    pushFrameToMatrix(matrix, renderer.renderSetupMode('waiting'));
+
+    if (!isHardwareAvailable()) {
+      console.log(renderer.toAsciiArt());
+    }
+
+    const cleanup = startWifiSetupBLE({
+      onStatusChange: (status, message) => {
+        const renderStatus = status === 'ready' ? 'waiting' : status as 'waiting' | 'connecting' | 'success' | 'failed';
+        pushFrameToMatrix(matrix, renderer.renderSetupMode(renderStatus));
+      },
+      onConnected: () => {
+        console.log('WiFi configured via BLE — continuing to main loop');
+        pushFrameToMatrix(matrix, renderer.renderSetupMode('success'));
+
+        // Show success screen briefly, then stop this BLE instance
+        // (the always-on BLE will start right after)
+        setTimeout(() => {
+          if (cleanup) cleanup();
+          resolve();
+        }, 3000);
+      },
+    });
+
+    if (!cleanup) {
+      // BLE not available (dev machine) — skip
+      console.warn('[setup] BLE not available — skipping WiFi setup wait');
+      resolve();
+    }
+  });
+}
 
 async function main(): Promise<void> {
   console.log('MLB LED Sign starting...');
@@ -27,6 +68,24 @@ async function main(): Promise<void> {
   const matrix: MatrixInstance = createMatrix(config);
 
   console.log(`  Hardware LED matrix: ${isHardwareAvailable() ? 'YES' : 'NO (console-only mode)'}`);
+
+  // If no WiFi is configured at all, block until BLE setup provides credentials
+  if (needsWifiSetup()) {
+    await waitForWifiSetup(renderer, matrix);
+  }
+
+  // Always start BLE in the background so WiFi can be managed at any time
+  const bleCleanup = startWifiSetupBLE({
+    onStatusChange: (status, message) => {
+      console.log(`[ble] WiFi status: ${status}${message ? ` (${message})` : ''}`);
+    },
+    onConnected: () => {
+      console.log('[ble] WiFi credentials updated — sign will use new network');
+    },
+  });
+  if (bleCleanup) {
+    console.log('BLE WiFi management running in background');
+  }
 
   pushFrameToMatrix(matrix, renderer.renderLoading());
   console.log('Showing loading indicator...');
@@ -154,6 +213,7 @@ async function main(): Promise<void> {
     clearInterval(rotationTimer);
     clearInterval(refreshTimer);
     clearInterval(watchdog);
+    if (bleCleanup) bleCleanup();
     matrix.clear();
     matrix.sync();
     process.exit(0);
