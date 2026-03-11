@@ -111,7 +111,7 @@ fi
 # ---------------------------------------------------------------------------
 echo ""
 echo "--- Step 2: Ensuring build tools ---"
-remote "sudo apt-get install -y --no-install-recommends build-essential git python3 bluetooth bluez libbluetooth-dev libusb-1.0-0-dev 2>/dev/null || true"
+remote "sudo apt-get install -y --no-install-recommends build-essential git python3 bluetooth bluez libbluetooth-dev libusb-1.0-0-dev libudev-dev 2>/dev/null || true"
 
 # ---------------------------------------------------------------------------
 # Step 3: Clone or pull the repo
@@ -185,8 +185,26 @@ compile_native_addon() {
 }
 
 compile_native_addon "usb" "usb@*/node_modules/usb"
-compile_native_addon "bluetooth-hci-socket" "@abandonware+bluetooth-hci-socket@*/node_modules/@abandonware/bluetooth-hci-socket"
 compile_native_addon "bleno" "@abandonware+bleno@*/node_modules/@abandonware/bleno"
+
+# bluetooth-hci-socket uses node-pre-gyp (not plain node-gyp) — compile separately
+echo "  bluetooth-hci-socket — checking..."
+BT_HCI_DIR=$(remote "ls -d ${REMOTE_DIR}/node_modules/.pnpm/@abandonware+bluetooth-hci-socket@*/node_modules/@abandonware/bluetooth-hci-socket 2>/dev/null | head -1 || true")
+if [ -n "$BT_HCI_DIR" ]; then
+  BT_HCI_BUILT=$(remote "ls ${BT_HCI_DIR}/build/Release/*.node 2>/dev/null | head -1 || true")
+  if [ "$FORCE_REBUILD" = false ] && [ -n "$BT_HCI_BUILT" ]; then
+    echo "  bluetooth-hci-socket — already compiled (use --force to rebuild)"
+  else
+    echo "  bluetooth-hci-socket — compiling with node-pre-gyp..."
+    if remote "cd ${BT_HCI_DIR} && sudo npx node-pre-gyp install --build-from-source"; then
+      echo "  bluetooth-hci-socket — done"
+    else
+      echo "  bluetooth-hci-socket — compile failed (non-fatal)"
+    fi
+  fi
+else
+  echo "  bluetooth-hci-socket — not installed, skipping"
+fi
 
 # ---------------------------------------------------------------------------
 # Step 6: Build TypeScript

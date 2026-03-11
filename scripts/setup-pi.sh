@@ -67,7 +67,7 @@ remote "sudo apt-get update && sudo apt-get upgrade -y"
 # ---------------------------------------------------------------------------
 echo ""
 echo "--- Step 2: Installing build tools and Bluetooth ---"
-remote "sudo apt-get install -y build-essential git python3 bluetooth bluez libbluetooth-dev libusb-1.0-0-dev"
+remote "sudo apt-get install -y build-essential git python3 bluetooth bluez libbluetooth-dev libusb-1.0-0-dev libudev-dev"
 
 # ---------------------------------------------------------------------------
 # Step 3: Blacklist sound module
