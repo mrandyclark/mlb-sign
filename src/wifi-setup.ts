@@ -399,8 +399,8 @@ export function startWifiSetupBLE(callbacks: WifiSetupCallbacks): (() => void) |
 
       // Power on adapter via bluetoothctl (handles rfkill + timing reliably)
       try {
-        execSync('rfkill unblock bluetooth 2>/dev/null', { timeout: 3000 });
-        execSync('bluetoothctl power on 2>/dev/null', { timeout: 5000 });
+        execSync('/usr/sbin/rfkill unblock bluetooth 2>/dev/null', { timeout: 3000 });
+        execSync('/usr/bin/bluetoothctl power on 2>/dev/null', { timeout: 5000 });
         console.log('[ble] Bluetooth adapter powered on');
       } catch (powerErr: any) {
         console.warn('[ble] Power-on warning (continuing):', powerErr.message || powerErr);
