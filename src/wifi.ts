@@ -103,12 +103,19 @@ export function needsWifiSetup(): boolean {
 
   // If WiFi is already configured, don't enter setup mode even if the
   // network is temporarily unreachable — the normal main loop will retry.
-  if (hasConfiguredWifi()) {
-    console.log('[wifi] WiFi already configured — skipping setup mode');
-    if (!hasInternetConnectivity()) {
-      console.log('[wifi] Note: no internet yet, but WiFi is configured. Main loop will retry.');
+  // Retry a few times because NetworkManager may not be ready right after boot.
+  for (let attempt = 1; attempt <= 5; attempt++) {
+    if (hasConfiguredWifi()) {
+      console.log('[wifi] WiFi already configured — skipping setup mode');
+      if (!hasInternetConnectivity()) {
+        console.log('[wifi] Note: no internet yet, but WiFi is configured. Main loop will retry.');
+      }
+      return false;
     }
-    return false;
+    if (attempt < 5) {
+      console.log(`[wifi] No WiFi found (attempt ${attempt}/5) — retrying in 3s...`);
+      execSync('sleep 3');
+    }
   }
 
   // No WiFi configured at all — setup mode is needed
