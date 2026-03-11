@@ -6,11 +6,12 @@ StartLimitIntervalSec=300
 StartLimitBurst=5
 
 [Service]
-Type=notify
+Type=simple
 WorkingDirectory=/home/mrandyclark/mlb-sign
 Environment=NODE_ENV=production
 Environment=PATH=/usr/local/bin:/usr/bin:/bin
 WatchdogSec=120
+TimeoutStartSec=infinity
 ExecStartPre=/bin/sleep 10
 ExecStartPre=/bin/bash /home/mrandyclark/mlb-sign/scripts/auto-update.sh
 ExecStart=/usr/local/bin/node /home/mrandyclark/mlb-sign/dist/index.js
