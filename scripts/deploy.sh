@@ -158,6 +158,15 @@ echo "--- Step 6: Building ---"
 remote "cd ${REMOTE_DIR} && pnpm run build"
 
 # ---------------------------------------------------------------------------
+# Step 6b: Install D-Bus policy for BLE
+# ---------------------------------------------------------------------------
+echo ""
+echo "--- Step 6b: Installing D-Bus policy ---"
+remote "sudo cp ${REMOTE_DIR}/scripts/com.mlbsign.conf /etc/dbus-1/system.d/"
+remote "sudo systemctl reload dbus 2>/dev/null || true"
+echo "D-Bus policy installed."
+
+# ---------------------------------------------------------------------------
 # Step 7: Install and start systemd service
 # ---------------------------------------------------------------------------
 echo ""
