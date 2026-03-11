@@ -26,6 +26,7 @@
 
 import { configureWifi, scanWifiNetworks } from './wifi';
 import { execSync } from 'child_process';
+import path from 'path';
 
 // BLE UUIDs (must be lowercase, no dashes for bleno)
 const SERVICE_UUID = '1234567812345678123456789abcdef0';
@@ -47,29 +48,30 @@ let bleno: any = null;
 /**
  * Try to load bleno. Returns false if not available (dev machine).
  */
-function loadBleno(): boolean {
-  // Step 1: Can we even resolve the module path?
+// Resolve bleno path at module load time (before native addons may change cwd)
+const BLENO_PATH = (() => {
   try {
-    const resolved = require.resolve('@abandonware/bleno');
-    console.log('[ble] bleno resolved at:', resolved);
-  } catch (e: any) {
-    console.warn('[ble] bleno not resolvable:', e.message?.split('\n')[0]);
-    console.warn('[ble] __dirname:', __dirname);
-    console.warn('[ble] cwd:', process.cwd());
+    return require.resolve('@abandonware/bleno');
+  } catch {
+    // Try explicit path relative to project root
+    const candidate = path.join(__dirname, '..', 'node_modules', '@abandonware', 'bleno');
+    try {
+      return require.resolve(candidate);
+    } catch {
+      return null;
+    }
+  }
+})();
+
+function loadBleno(): boolean {
+  if (!BLENO_PATH) {
+    console.warn('[ble] @abandonware/bleno not available — BLE setup disabled');
     return false;
   }
 
-  // Step 2: Can we load bluetooth-hci-socket (bleno's key native dep)?
   try {
-    const hciPath = require.resolve('@abandonware/bluetooth-hci-socket');
-    console.log('[ble] bluetooth-hci-socket resolved at:', hciPath);
-  } catch (e: any) {
-    console.warn('[ble] bluetooth-hci-socket not resolvable:', e.message?.split('\n')[0]);
-  }
-
-  // Step 3: Try to actually load bleno
-  try {
-    bleno = require('@abandonware/bleno');
+    console.log('[ble] Loading bleno from:', BLENO_PATH);
+    bleno = require(BLENO_PATH);
     console.log('[ble] bleno loaded successfully');
     return true;
   } catch (error: any) {
