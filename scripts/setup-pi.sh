@@ -10,10 +10,13 @@
 #
 # What this does:
 #   1. Updates the system (apt update/upgrade)
-#   2. Installs build tools (build-essential, git, python3)
+#   2. Installs build tools, Bluetooth, and watchdog
 #   3. Blacklists the sound module (conflicts with LED matrix GPIO)
 #   4. Sets the sign ID (~/.sign-id and /root/.sign-id)
-#   5. Reboots the Pi
+#   5. Enables hardware watchdog (auto-reboot on kernel lockup)
+#   6. Adds isolcpus=3 (reserves a CPU core for LED matrix refresh)
+#   7. Ensures Bluetooth is unblocked on boot
+#   8. Reboots the Pi
 #
 # After reboot, run: ./scripts/deploy.sh <user@host>
 #
@@ -67,7 +70,7 @@ remote "sudo apt-get update && sudo apt-get upgrade -y"
 # ---------------------------------------------------------------------------
 echo ""
 echo "--- Step 2: Installing build tools and Bluetooth ---"
-remote "sudo apt-get install -y build-essential git python3 bluetooth bluez"
+remote "sudo apt-get install -y build-essential git python3 bluetooth bluez watchdog"
 
 # ---------------------------------------------------------------------------
 # Step 3: Blacklist sound module
@@ -91,11 +94,63 @@ remote "sudo bash -c 'echo \"${SIGN_ID}\" > /root/.sign-id'"
 echo "Sign ID set: ${SIGN_ID}"
 
 # ---------------------------------------------------------------------------
-# Step 5: Reboot
+# Step 5: Hardware watchdog (auto-reboot on kernel lockup)
 # ---------------------------------------------------------------------------
 echo ""
-echo "--- Step 5: Rebooting ---"
-echo "The Pi will reboot now. Wait ~30 seconds, then run:"
+echo "--- Step 5: Enabling hardware watchdog ---"
+if remote "grep -q 'dtparam=watchdog=on' /boot/firmware/config.txt 2>/dev/null"; then
+  echo "Already enabled."
+else
+  remote "echo 'dtparam=watchdog=on' | sudo tee -a /boot/firmware/config.txt"
+fi
+remote "echo -e 'watchdog-device = /dev/watchdog\nwatchdog-timeout = 15\nmax-load-1 = 24' | sudo tee /etc/watchdog.conf"
+remote "sudo systemctl enable watchdog"
+remote "sudo systemctl start watchdog 2>/dev/null || true"
+echo "Hardware watchdog enabled."
+
+# ---------------------------------------------------------------------------
+# Step 6: Reserve CPU core for LED matrix (isolcpus=3)
+# ---------------------------------------------------------------------------
+echo ""
+echo "--- Step 6: Adding isolcpus=3 to boot params ---"
+if remote "grep -q 'isolcpus=3' /boot/firmware/cmdline.txt 2>/dev/null"; then
+  echo "Already set."
+else
+  remote "sudo sed -i 's/$/ isolcpus=3/' /boot/firmware/cmdline.txt"
+  echo "isolcpus=3 added."
+fi
+
+# ---------------------------------------------------------------------------
+# Step 7: Ensure Bluetooth is unblocked on boot
+# ---------------------------------------------------------------------------
+echo ""
+echo "--- Step 7: Enabling Bluetooth on boot ---"
+if remote "test -f /etc/systemd/system/rfkill-unblock-bt.service"; then
+  echo "Already configured."
+else
+  remote "sudo bash -c 'cat > /etc/systemd/system/rfkill-unblock-bt.service << EOF
+[Unit]
+Description=Unblock Bluetooth via rfkill
+After=bluetooth.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/rfkill unblock bluetooth
+ExecStart=/usr/bin/bluetoothctl power on
+
+[Install]
+WantedBy=multi-user.target
+EOF'"
+  remote "sudo systemctl enable rfkill-unblock-bt.service"
+  echo "Bluetooth auto-unblock service installed."
+fi
+
+# ---------------------------------------------------------------------------
+# Step 8: Reboot
+# ---------------------------------------------------------------------------
+echo ""
+echo "--- Step 8: Rebooting ---"
+echo "The Pi will reboot now. Wait ~60 seconds, then run:"
 echo ""
 echo "  ./scripts/deploy.sh ${TARGET}"
 echo ""
