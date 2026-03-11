@@ -197,7 +197,15 @@ if [ -n "$BT_HCI_DIR" ]; then
     echo "  bluetooth-hci-socket — already compiled (use --force to rebuild)"
   else
     echo "  bluetooth-hci-socket — compiling with node-gyp (bypassing broken node-pre-gyp)..."
-    if remote "cd ${REMOTE_DIR} && sudo npx node-gyp rebuild --directory=${BT_HCI_DIR} -- -Dmodule_name=bluetooth_hci_socket -Dmodule_path=${BT_HCI_DIR}/build/Release"; then
+    # Use node-gyp with the required -D vars, but the action_after_build copy step may fail
+    # because it tries to copy from a wrong relative path. So we compile, then manually
+    # ensure the .node file is in build/Release/.
+    remote "cd ${REMOTE_DIR} && sudo npx node-gyp rebuild --directory=${BT_HCI_DIR} -- -Dmodule_name=bluetooth_hci_socket -Dmodule_path=${BT_HCI_DIR}/build/Release 2>&1 || true"
+    # Copy from obj.target if the direct copy failed
+    if ! remote "test -f ${BT_HCI_DIR}/build/Release/bluetooth_hci_socket.node"; then
+      remote "sudo cp ${BT_HCI_DIR}/build/Release/obj.target/bluetooth_hci_socket.node ${BT_HCI_DIR}/build/Release/ 2>/dev/null || true"
+    fi
+    if remote "test -f ${BT_HCI_DIR}/build/Release/bluetooth_hci_socket.node"; then
       echo "  bluetooth-hci-socket — done"
     else
       echo "  bluetooth-hci-socket — compile failed (non-fatal)"
