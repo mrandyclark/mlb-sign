@@ -30,6 +30,14 @@
 import { configureWifi, scanWifiNetworks } from './wifi';
 import { execSync } from 'child_process';
 
+// Load dbus-next at module load time (before native addons may interfere with require)
+let dbus: any = null;
+try {
+  dbus = require('dbus-next');
+} catch {
+  // Not available — running on dev machine or dbus-next not installed
+}
+
 // BLE UUIDs (with dashes for D-Bus/BlueZ format)
 const SERVICE_UUID = '12345678-1234-5678-1234-56789abcdef0';
 const SSID_CHAR_UUID = '12345678-1234-5678-1234-56789abcdef1';
@@ -66,10 +74,7 @@ interface CharDef {
  * Returns a cleanup function to stop advertising, or null if BLE isn't available.
  */
 export function startWifiSetupBLE(callbacks: WifiSetupCallbacks): (() => void) | null {
-  let dbus: any;
-  try {
-    dbus = require('dbus-next');
-  } catch {
+  if (!dbus) {
     console.warn('[ble] dbus-next not available — BLE setup disabled');
     return null;
   }
