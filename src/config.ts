@@ -65,7 +65,7 @@ const DEFAULT_CONFIG: Config = {
   api: {
     baseUrl: 'http://localhost:3000/api/external',
     apiKey: '',
-    refreshIntervalSeconds: 3600,
+    refreshIntervalSeconds: 300,
     timeoutSeconds: 30,
   },
   display: {
