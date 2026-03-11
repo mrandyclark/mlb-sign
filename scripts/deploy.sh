@@ -111,7 +111,7 @@ fi
 # ---------------------------------------------------------------------------
 echo ""
 echo "--- Step 2: Ensuring build tools ---"
-remote "sudo apt-get install -y --no-install-recommends build-essential git python3 bluetooth bluez libbluetooth-dev 2>/dev/null || true"
+remote "sudo apt-get install -y --no-install-recommends build-essential git python3 bluetooth bluez libbluetooth-dev libusb-1.0-0-dev 2>/dev/null || true"
 
 # ---------------------------------------------------------------------------
 # Step 3: Clone or pull the repo
@@ -151,24 +151,27 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# Step 5b: Compile @abandonware/bleno native addon (skip if already built)
+# Step 5b: Compile BLE native addons (bleno + its dependencies)
 # ---------------------------------------------------------------------------
 echo ""
-echo "--- Step 5b: Checking bleno native addon ---"
-BLENO_DIR=$(remote "ls -d ${REMOTE_DIR}/node_modules/.pnpm/@abandonware+bleno@*/node_modules/@abandonware/bleno 2>/dev/null || true")
-if [ -n "$BLENO_DIR" ]; then
-  BLENO_ADDON="${BLENO_DIR}/build/Release/bleno.node"
-  if [ "$FORCE_REBUILD" = false ] && remote "test -f ${BLENO_ADDON}"; then
-    echo "Bleno native addon already compiled — skipping. (Use --force to recompile)"
-  elif remote "test -f ${BLENO_DIR}/binding.gyp"; then
-    echo "Compiling bleno native addon..."
-    remote "cd ${REMOTE_DIR} && sudo npx node-gyp rebuild --directory=${BLENO_DIR}"
-    echo "Bleno native addon compiled."
-  else
-    echo "bleno binding.gyp not found — skipping"
-  fi
+echo "--- Step 5b: Checking BLE native addons ---"
+# Find all packages with binding.gyp under the bleno dependency tree
+BLE_GYPS=$(remote "find ${REMOTE_DIR}/node_modules/.pnpm -path '*/binding.gyp' -not -path '*/rpi-led-matrix/*' 2>/dev/null || true")
+if [ -n "$BLE_GYPS" ]; then
+  while IFS= read -r GYP_FILE; do
+    PKG_DIR=$(dirname "$GYP_FILE")
+    PKG_NAME=$(remote "basename ${PKG_DIR}")
+    HAS_BUILD=$(remote "ls ${PKG_DIR}/build/Release/*.node 2>/dev/null | head -1 || true")
+    if [ "$FORCE_REBUILD" = false ] && [ -n "$HAS_BUILD" ]; then
+      echo "  ${PKG_NAME} — already compiled (use --force to rebuild)"
+    else
+      echo "  ${PKG_NAME} — compiling..."
+      remote "cd ${REMOTE_DIR} && sudo npx node-gyp rebuild --directory=${PKG_DIR}" || echo "  ${PKG_NAME} — compile failed (non-fatal)"
+      echo "  ${PKG_NAME} — done"
+    fi
+  done <<< "$BLE_GYPS"
 else
-  echo "bleno not installed — skipping native compile"
+  echo "  No BLE native addons found — skipping"
 fi
 
 # ---------------------------------------------------------------------------
