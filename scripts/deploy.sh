@@ -151,28 +151,42 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# Step 5b: Compile BLE native addons (bleno + its dependencies)
+# Step 5b: Compile BLE native addons (usb, bluetooth-hci-socket, bleno)
+# Order matters — bleno depends on bluetooth-hci-socket depends on usb
 # ---------------------------------------------------------------------------
 echo ""
 echo "--- Step 5b: Checking BLE native addons ---"
-# Find all packages with binding.gyp under the bleno dependency tree
-BLE_GYPS=$(remote "find ${REMOTE_DIR}/node_modules/.pnpm -path '*/binding.gyp' -not -path '*/rpi-led-matrix/*' 2>/dev/null || true")
-if [ -n "$BLE_GYPS" ]; then
-  while IFS= read -r GYP_FILE; do
-    PKG_DIR=$(dirname "$GYP_FILE")
-    PKG_NAME=$(remote "basename ${PKG_DIR}")
-    HAS_BUILD=$(remote "ls ${PKG_DIR}/build/Release/*.node 2>/dev/null | head -1 || true")
-    if [ "$FORCE_REBUILD" = false ] && [ -n "$HAS_BUILD" ]; then
-      echo "  ${PKG_NAME} — already compiled (use --force to rebuild)"
-    else
-      echo "  ${PKG_NAME} — compiling..."
-      remote "cd ${REMOTE_DIR} && sudo npx node-gyp rebuild --directory=${PKG_DIR}" || echo "  ${PKG_NAME} — compile failed (non-fatal)"
-      echo "  ${PKG_NAME} — done"
-    fi
-  done <<< "$BLE_GYPS"
-else
-  echo "  No BLE native addons found — skipping"
-fi
+compile_native_addon() {
+  local LABEL="$1"
+  local PNPM_GLOB="$2"
+
+  local PKG_DIR
+  PKG_DIR=$(remote "ls -d ${REMOTE_DIR}/node_modules/.pnpm/${PNPM_GLOB} 2>/dev/null | head -1 || true")
+  if [ -z "$PKG_DIR" ]; then
+    echo "  ${LABEL} — not installed, skipping"
+    return
+  fi
+  if ! remote "test -f ${PKG_DIR}/binding.gyp"; then
+    echo "  ${LABEL} — no binding.gyp, skipping"
+    return
+  fi
+  local HAS_BUILD
+  HAS_BUILD=$(remote "ls ${PKG_DIR}/build/Release/*.node 2>/dev/null | head -1 || true")
+  if [ "$FORCE_REBUILD" = false ] && [ -n "$HAS_BUILD" ]; then
+    echo "  ${LABEL} — already compiled (use --force to rebuild)"
+    return
+  fi
+  echo "  ${LABEL} — compiling..."
+  if remote "cd ${REMOTE_DIR} && sudo npx node-gyp rebuild --directory=${PKG_DIR}"; then
+    echo "  ${LABEL} — done"
+  else
+    echo "  ${LABEL} — compile failed (non-fatal)"
+  fi
+}
+
+compile_native_addon "usb" "usb@*/node_modules/usb"
+compile_native_addon "bluetooth-hci-socket" "@abandonware+bluetooth-hci-socket@*/node_modules/@abandonware/bluetooth-hci-socket"
+compile_native_addon "bleno" "@abandonware+bleno@*/node_modules/@abandonware/bleno"
 
 # ---------------------------------------------------------------------------
 # Step 6: Build TypeScript
