@@ -397,13 +397,18 @@ export function startWifiSetupBLE(callbacks: WifiSetupCallbacks): (() => void) |
       console.log('[ble] Getting BlueZ proxy object...');
       const bluezObj = await bus.getProxyObject(BLUEZ_SERVICE, ADAPTER_PATH);
 
-      // Power on adapter via bluetoothctl (handles rfkill + timing reliably)
+      // Power on adapter via rfkill + bluetoothctl (each independent so one failing doesn't block the other)
       try {
-        execSync('/usr/sbin/rfkill unblock bluetooth 2>/dev/null', { timeout: 3000 });
-        execSync('/usr/bin/bluetoothctl power on 2>/dev/null', { timeout: 5000 });
-        console.log('[ble] Bluetooth adapter powered on');
-      } catch (powerErr: any) {
-        console.warn('[ble] Power-on warning (continuing):', powerErr.message || powerErr);
+        execSync('/usr/sbin/rfkill unblock bluetooth', { timeout: 3000, stdio: 'ignore' });
+        console.log('[ble] rfkill unblock OK');
+      } catch (e: any) {
+        console.warn('[ble] rfkill unblock failed (non-fatal):', e.status ?? e.message);
+      }
+      try {
+        execSync('/usr/bin/bluetoothctl power on', { timeout: 5000, stdio: 'pipe' });
+        console.log('[ble] bluetoothctl power on OK');
+      } catch (e: any) {
+        console.warn('[ble] bluetoothctl power on failed (non-fatal):', e.status ?? e.message);
       }
 
       const adapterProps = bluezObj.getInterface('org.freedesktop.DBus.Properties');
