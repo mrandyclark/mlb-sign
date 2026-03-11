@@ -17,16 +17,14 @@
     "typescript": "^5.0.0",
     "ts-node": "^10.9.0"
   },
-  "dependencies": {},
+  "dependencies": {
+    "dbus-next": "^0.10.2"
+  },
   "optionalDependencies": {
-    "@abandonware/bleno": "^0.6.2",
     "rpi-led-matrix": "^1.0.0"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
-      "@abandonware/bleno",
-      "@abandonware/bluetooth-hci-socket",
-      "usb",
       "rpi-led-matrix"
     ]
   }

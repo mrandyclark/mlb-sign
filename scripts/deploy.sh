@@ -111,7 +111,7 @@ fi
 # ---------------------------------------------------------------------------
 echo ""
 echo "--- Step 2: Ensuring build tools ---"
-remote "sudo apt-get install -y --no-install-recommends build-essential git python3 bluetooth bluez libbluetooth-dev libusb-1.0-0-dev libudev-dev 2>/dev/null || true"
+remote "sudo apt-get install -y --no-install-recommends build-essential git python3 bluetooth bluez 2>/dev/null || true"
 
 # ---------------------------------------------------------------------------
 # Step 3: Clone or pull the repo
@@ -148,71 +148,6 @@ elif remote "test -f ${REMOTE_DIR}/${RPI_LED_DIR}/binding.gyp"; then
   echo "Native addon compiled."
 else
   echo "rpi-led-matrix not found — skipping native compile (dev machine?)"
-fi
-
-# ---------------------------------------------------------------------------
-# Step 5b: Compile BLE native addons (usb, bluetooth-hci-socket, bleno)
-# Order matters — bleno depends on bluetooth-hci-socket depends on usb
-# ---------------------------------------------------------------------------
-echo ""
-echo "--- Step 5b: Checking BLE native addons ---"
-compile_native_addon() {
-  local LABEL="$1"
-  local PNPM_GLOB="$2"
-
-  local PKG_DIR
-  PKG_DIR=$(remote "ls -d ${REMOTE_DIR}/node_modules/.pnpm/${PNPM_GLOB} 2>/dev/null | head -1 || true")
-  if [ -z "$PKG_DIR" ]; then
-    echo "  ${LABEL} — not installed, skipping"
-    return
-  fi
-  if ! remote "test -f ${PKG_DIR}/binding.gyp"; then
-    echo "  ${LABEL} — no binding.gyp, skipping"
-    return
-  fi
-  local HAS_BUILD
-  HAS_BUILD=$(remote "ls ${PKG_DIR}/build/Release/*.node 2>/dev/null | head -1 || true")
-  if [ "$FORCE_REBUILD" = false ] && [ -n "$HAS_BUILD" ]; then
-    echo "  ${LABEL} — already compiled (use --force to rebuild)"
-    return
-  fi
-  echo "  ${LABEL} — compiling..."
-  if remote "cd ${REMOTE_DIR} && sudo npx node-gyp rebuild --directory=${PKG_DIR}"; then
-    echo "  ${LABEL} — done"
-  else
-    echo "  ${LABEL} — compile failed (non-fatal)"
-  fi
-}
-
-compile_native_addon "usb" "usb@*/node_modules/usb"
-compile_native_addon "bleno" "@abandonware+bleno@*/node_modules/@abandonware/bleno"
-
-# bluetooth-hci-socket uses node-pre-gyp, but its bundled version is broken on Node 20.
-# Bypass node-pre-gyp and compile with raw node-gyp, passing the required variables.
-echo "  bluetooth-hci-socket — checking..."
-BT_HCI_DIR=$(remote "ls -d ${REMOTE_DIR}/node_modules/.pnpm/@abandonware+bluetooth-hci-socket@*/node_modules/@abandonware/bluetooth-hci-socket 2>/dev/null | head -1 || true")
-if [ -n "$BT_HCI_DIR" ]; then
-  BT_HCI_BUILT=$(remote "ls ${BT_HCI_DIR}/build/Release/bluetooth_hci_socket.node 2>/dev/null || true")
-  if [ "$FORCE_REBUILD" = false ] && [ -n "$BT_HCI_BUILT" ]; then
-    echo "  bluetooth-hci-socket — already compiled (use --force to rebuild)"
-  else
-    echo "  bluetooth-hci-socket — compiling with node-gyp (bypassing broken node-pre-gyp)..."
-    # Use node-gyp with the required -D vars, but the action_after_build copy step may fail
-    # because it tries to copy from a wrong relative path. So we compile, then manually
-    # ensure the .node file is in build/Release/.
-    remote "cd ${REMOTE_DIR} && sudo npx node-gyp rebuild --directory=${BT_HCI_DIR} -- -Dmodule_name=bluetooth_hci_socket -Dmodule_path=${BT_HCI_DIR}/build/Release 2>&1 || true"
-    # Copy from obj.target if the direct copy failed
-    if ! remote "test -f ${BT_HCI_DIR}/build/Release/bluetooth_hci_socket.node"; then
-      remote "sudo cp ${BT_HCI_DIR}/build/Release/obj.target/bluetooth_hci_socket.node ${BT_HCI_DIR}/build/Release/ 2>/dev/null || true"
-    fi
-    if remote "test -f ${BT_HCI_DIR}/build/Release/bluetooth_hci_socket.node"; then
-      echo "  bluetooth-hci-socket — done"
-    else
-      echo "  bluetooth-hci-socket — compile failed (non-fatal)"
-    fi
-  fi
-else
-  echo "  bluetooth-hci-socket — not installed, skipping"
 fi
 
 # ---------------------------------------------------------------------------
