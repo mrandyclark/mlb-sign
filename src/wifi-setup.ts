@@ -394,25 +394,32 @@ export function startWifiSetupBLE(callbacks: WifiSetupCallbacks): (() => void) |
       await bus.requestName('com.mlbsign', 0);
       console.log('[ble] D-Bus name acquired: com.mlbsign');
 
+      console.log('[ble] Getting BlueZ proxy object...');
       const bluezObj = await bus.getProxyObject(BLUEZ_SERVICE, ADAPTER_PATH);
 
       // Power on adapter
+      console.log('[ble] Powering on adapter...');
       const adapterProps = bluezObj.getInterface('org.freedesktop.DBus.Properties');
       await adapterProps.Set('org.bluez.Adapter1', 'Powered', new Variant('b', true));
       console.log('[ble] Bluetooth adapter powered on');
 
       // Register advertisement
+      console.log('[ble] Registering advertisement...');
       const adManager = bluezObj.getInterface('org.bluez.LEAdvertisingManager1');
       await adManager.RegisterAdvertisement(AD_PATH, {});
       console.log('[ble] Advertising as "MLB-Sign"');
 
       // Register GATT application
+      console.log('[ble] Registering GATT application...');
       const gattManager = bluezObj.getInterface('org.bluez.GattManager1');
       await gattManager.RegisterApplication(APP_PATH, {});
       console.log('[ble] GATT services registered');
 
     } catch (err: any) {
       console.warn('[ble] Failed to start BLE server:', err.message || err);
+      console.warn('[ble] Error type:', err.type || 'unknown');
+      console.warn('[ble] Error text:', err.text || 'none');
+      if (err.reply) console.warn('[ble] Error reply:', JSON.stringify(err.reply.body));
       if (bus) { bus.disconnect(); bus = null; }
     }
   }
