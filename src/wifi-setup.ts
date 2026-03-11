@@ -51,8 +51,9 @@ function loadBleno(): boolean {
   try {
     bleno = require('@abandonware/bleno');
     return true;
-  } catch {
+  } catch (error) {
     console.warn('[ble] @abandonware/bleno not available — BLE setup disabled');
+    console.warn('[ble] Load error:', error);
     return false;
   }
 }
