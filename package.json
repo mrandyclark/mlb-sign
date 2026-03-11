@@ -21,5 +21,13 @@
   "optionalDependencies": {
     "@abandonware/bleno": "^0.6.2",
     "rpi-led-matrix": "^1.0.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@abandonware/bleno",
+      "@abandonware/bluetooth-hci-socket",
+      "usb",
+      "rpi-led-matrix"
+    ]
   }
 }
