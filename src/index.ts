@@ -11,6 +11,15 @@ import { createMatrix, isHardwareAvailable, pushFrameToMatrix, MatrixInstance } 
 import { SignExternalConfigResponse, Slide } from './types';
 import { needsWifiSetup } from './wifi';
 import { startWifiSetupBLE } from './wifi-setup';
+import { execSync } from 'child_process';
+
+// systemd sd_notify — no-op on dev machines (no NOTIFY_SOCKET)
+function sdNotify(msg: string): void {
+  if (!process.env.NOTIFY_SOCKET) return;
+  try {
+    execSync(`systemd-notify --pid=${process.pid} ${msg}`, { timeout: 3000, stdio: 'ignore' });
+  } catch { /* ok */ }
+}
 
 const PAYLOAD_VERSION = 3;
 
@@ -205,6 +214,10 @@ async function main(): Promise<void> {
     }
   }, 60_000);
 
+  // Tell systemd we're ready + start watchdog heartbeat
+  sdNotify('READY=1');
+  const sdWatchdog = setInterval(() => sdNotify('WATCHDOG=1'), 30_000);
+
   console.log('\nSign is running. Press Ctrl+C to stop.');
 
   // Graceful shutdown
@@ -213,6 +226,7 @@ async function main(): Promise<void> {
     clearInterval(rotationTimer);
     clearInterval(refreshTimer);
     clearInterval(watchdog);
+    clearInterval(sdWatchdog);
     if (bleCleanup) bleCleanup();
     matrix.clear();
     matrix.sync();
