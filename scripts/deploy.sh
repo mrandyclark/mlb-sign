@@ -187,16 +187,17 @@ compile_native_addon() {
 compile_native_addon "usb" "usb@*/node_modules/usb"
 compile_native_addon "bleno" "@abandonware+bleno@*/node_modules/@abandonware/bleno"
 
-# bluetooth-hci-socket uses node-pre-gyp (not plain node-gyp) — compile separately
+# bluetooth-hci-socket uses node-pre-gyp, but its bundled version is broken on Node 20.
+# Bypass node-pre-gyp and compile with raw node-gyp, passing the required variables.
 echo "  bluetooth-hci-socket — checking..."
 BT_HCI_DIR=$(remote "ls -d ${REMOTE_DIR}/node_modules/.pnpm/@abandonware+bluetooth-hci-socket@*/node_modules/@abandonware/bluetooth-hci-socket 2>/dev/null | head -1 || true")
 if [ -n "$BT_HCI_DIR" ]; then
-  BT_HCI_BUILT=$(remote "ls ${BT_HCI_DIR}/build/Release/*.node 2>/dev/null | head -1 || true")
+  BT_HCI_BUILT=$(remote "ls ${BT_HCI_DIR}/build/Release/bluetooth_hci_socket.node 2>/dev/null || true")
   if [ "$FORCE_REBUILD" = false ] && [ -n "$BT_HCI_BUILT" ]; then
     echo "  bluetooth-hci-socket — already compiled (use --force to rebuild)"
   else
-    echo "  bluetooth-hci-socket — compiling with node-pre-gyp..."
-    if remote "cd ${BT_HCI_DIR} && sudo npx node-pre-gyp install --build-from-source"; then
+    echo "  bluetooth-hci-socket — compiling with node-gyp (bypassing broken node-pre-gyp)..."
+    if remote "cd ${REMOTE_DIR} && sudo npx node-gyp rebuild --directory=${BT_HCI_DIR} -- -Dmodule_name=bluetooth_hci_socket -Dmodule_path=${BT_HCI_DIR}/build/Release"; then
       echo "  bluetooth-hci-socket — done"
     else
       echo "  bluetooth-hci-socket — compile failed (non-fatal)"
