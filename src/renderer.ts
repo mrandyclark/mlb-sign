@@ -262,17 +262,17 @@ export class Renderer {
     this.frameBuffer.clear();
 
     // Column layout:
-    //   Team col: x=1..teamColEnd  | H col | R col | E col
+    //   Team col: x=1..teamColEnd  | R col | H col | E col
     const teamColEnd = 20;
     const colW = 14;
-    const col1 = teamColEnd + 1;             // H column start
-    const col2 = col1 + colW;                // R column start
+    const col1 = teamColEnd + 1;             // R column start
+    const col2 = col1 + colW;                // H column start
     const col3 = col2 + colW;                // E column start
     const tableRight = col3 + colW;          // right edge
 
     // Row positions (vertically centered in 32px)
     const labelY = 1;                        // "FINAL" top label
-    const headerY = 8;                       // H / R / E headers
+    const headerY = 8;                       // R / H / E headers
     const hLine1 = headerY + 6;             // line below header
     const awayY = hLine1 + 2;               // away team data
     const hLine2 = awayY + 6;               // line between teams
@@ -288,9 +288,9 @@ export class Renderer {
     const finalW = this.textWidth(finalLabel);
     this.drawText(finalLabel, tableRight - finalW, labelY, 80, 80, 80);
 
-    // Column headers (H, R, E)
-    this.drawTextCentered('H', col1, col1 + colW, headerY, headerColor.r, headerColor.g, headerColor.b);
-    this.drawTextCentered('R', col2, col2 + colW, headerY, headerColor.r, headerColor.g, headerColor.b);
+    // Column headers (R, H, E)
+    this.drawTextCentered('R', col1, col1 + colW, headerY, headerColor.r, headerColor.g, headerColor.b);
+    this.drawTextCentered('H', col2, col2 + colW, headerY, headerColor.r, headerColor.g, headerColor.b);
     this.drawTextCentered('E', col3, col3 + colW, headerY, headerColor.r, headerColor.g, headerColor.b);
 
     // Horizontal line below header
@@ -299,8 +299,8 @@ export class Renderer {
     // Away team row
     const awayColor = this.getTeamColor(slide.awayTeam.colors);
     this.drawText(slide.awayTeam.abbreviation, 1, awayY, awayColor.r, awayColor.g, awayColor.b);
-    this.drawTextCentered(`${slide.awayTeam.hits}`, col1, col1 + colW, awayY, 255, 255, 255);
-    this.drawTextCentered(`${slide.awayTeam.runs}`, col2, col2 + colW, awayY, 255, 255, 255);
+    this.drawTextCentered(`${slide.awayTeam.runs}`, col1, col1 + colW, awayY, 255, 255, 255);
+    this.drawTextCentered(`${slide.awayTeam.hits}`, col2, col2 + colW, awayY, 255, 255, 255);
     this.drawTextCentered(`${slide.awayTeam.errors}`, col3, col3 + colW, awayY, 255, 255, 255);
 
     // Horizontal line between away and home
@@ -309,8 +309,8 @@ export class Renderer {
     // Home team row
     const homeColor = this.getTeamColor(slide.homeTeam.colors);
     this.drawText(slide.homeTeam.abbreviation, 1, homeY, homeColor.r, homeColor.g, homeColor.b);
-    this.drawTextCentered(`${slide.homeTeam.hits}`, col1, col1 + colW, homeY, 255, 255, 255);
-    this.drawTextCentered(`${slide.homeTeam.runs}`, col2, col2 + colW, homeY, 255, 255, 255);
+    this.drawTextCentered(`${slide.homeTeam.runs}`, col1, col1 + colW, homeY, 255, 255, 255);
+    this.drawTextCentered(`${slide.homeTeam.hits}`, col2, col2 + colW, homeY, 255, 255, 255);
     this.drawTextCentered(`${slide.homeTeam.errors}`, col3, col3 + colW, homeY, 255, 255, 255);
 
     // Vertical grid lines spanning header through home row
